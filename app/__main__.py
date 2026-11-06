@@ -1,10 +1,10 @@
 """Entry point: ``python -m app``."""
 
-from app.meta import APP_NAME, VERSION
+from app.core.game import Game
 
 
 def main() -> None:
-    print(f"{APP_NAME} {VERSION}")
+    Game().run()
 
 
 if __name__ == "__main__":
