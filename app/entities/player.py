@@ -1,15 +1,22 @@
 """The player: a circle that walks in a straight line to where you click."""
 
+import math
+
 import pygame
 from pygame.math import Vector2
 
 from app import config
+from app.render.shapes import draw_alpha_circle
 from app.theme.palette import PALETTE
 from app.util.mathx import clamp
 
 
 class Player:
-    """Moves toward ``destination`` at a constant speed and stops exactly there."""
+    """Moves toward ``destination`` at a constant speed and stops exactly there.
+
+    Two ability states live here too: a shield bubble (blocks one hit) and a
+    dash (a fast, fixed-distance move that overrides walking until it ends).
+    """
 
     def __init__(self, pos) -> None:
         self.pos = Vector2(pos)
@@ -17,6 +24,31 @@ class Player:
         self.facing = Vector2(1, 0)            # last movement direction
         self.radius = config.PLAYER_RADIUS
         self.speed = config.PLAYER_SPEED
+        self.shield_remaining = 0.0
+        self.shield_duration = 0.0
+        self.dash_target: Vector2 | None = None
+        self.dash_speed = 0.0
+
+    # --- Shield -------------------------------------------------------------------------
+    def add_shield(self, duration: float) -> None:
+        self.shield_remaining = duration
+        self.shield_duration = duration
+
+    @property
+    def shielded(self) -> bool:
+        return self.shield_remaining > 0
+
+    def consume_shield(self) -> bool:
+        """Break the shield to block a hit. Returns False if there was none."""
+        if not self.shielded:
+            return False
+        self.shield_remaining = 0.0
+        return True
+
+    @property
+    def hit_radius(self) -> float:
+        """While shielded, the bubble is the hitbox."""
+        return config.SHIELD_RADIUS if self.shielded else self.radius
 
     # --- Movement -----------------------------------------------------------------------
     def clamp_to_arena(self, point) -> Vector2:
@@ -25,22 +57,45 @@ class Player:
                        clamp(point[1], self.radius, config.SCREEN_HEIGHT - self.radius))
 
     def move_to(self, point) -> None:
-        """Set a new walk destination."""
+        """Set a new walk destination (resumed after a dash if given mid-dash)."""
         self.destination = self.clamp_to_arena(point)
 
+    def start_dash(self, target, speed: float) -> None:
+        self.dash_target = self.clamp_to_arena(target)
+        self.dash_speed = speed
+        self.destination = Vector2(self.dash_target)    # stop where the dash ends
+
+    @property
+    def dashing(self) -> bool:
+        return self.dash_target is not None
+
     def update(self, dt: float) -> None:
-        to_target = self.destination - self.pos
+        self.shield_remaining = max(0.0, self.shield_remaining - dt)
+        if self.dashing:
+            arrived = self._step_toward(self.dash_target, self.dash_speed * dt)
+            if arrived:
+                self.dash_target = None
+        else:
+            self._step_toward(self.destination, self.speed * dt)
+
+    def _step_toward(self, target: Vector2, step: float) -> bool:
+        """Move up to ``step`` px toward ``target``. Returns True on arrival."""
+        to_target = target - self.pos
         distance = to_target.length()
-        step = self.speed * dt
         if distance > 0:
             self.facing = to_target / distance
         if distance <= step:
-            self.pos = Vector2(self.destination)      # arrive exactly, no overshoot
-        else:
-            self.pos += to_target * (step / distance)
+            self.pos = Vector2(target)                # arrive exactly, no overshoot
+            return True
+        self.pos += to_target * (step / distance)
+        return False
 
     # --- Drawing ------------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
+        if self.dashing:
+            # Short afterimages behind the player while dashing.
+            for k in (3, 2, 1):
+                draw_alpha_circle(surface, PALETTE.dash, self.pos - self.facing * k * 14, self.radius, 40 * (4 - k))
         pygame.draw.circle(surface, PALETTE.player, self.pos, self.radius)
         highlight = self.pos - Vector2(self.radius, self.radius) * 0.3
         pygame.draw.circle(surface, PALETTE.player_light, highlight, self.radius * 0.45)
@@ -50,3 +105,16 @@ class Player:
         base = self.pos + self.facing * (self.radius + 1)
         tip = self.pos + self.facing * (self.radius + 7)
         pygame.draw.polygon(surface, PALETTE.player_outline, [tip, base + side * 5, base - side * 5])
+        if self.shielded:
+            self._draw_shield(surface)
+
+    def _draw_shield(self, surface: pygame.Surface) -> None:
+        r = config.SHIELD_RADIUS
+        draw_alpha_circle(surface, PALETTE.shield, self.pos, r, 50)
+        draw_alpha_circle(surface, PALETTE.shield, self.pos, r, 230, width=2)
+        # An arc around the bubble shows how long it has left (clockwise from the top).
+        left = self.shield_remaining / self.shield_duration
+        box = pygame.Rect(0, 0, (r + 6) * 2, (r + 6) * 2)
+        box.center = (int(self.pos.x), int(self.pos.y))
+        start = math.pi / 2
+        pygame.draw.arc(surface, PALETTE.shield, box, start, start + math.tau * left, 3)

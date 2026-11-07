@@ -57,3 +57,24 @@ LASER_ACTIVE_TIME = 0.35       # s the beam is deadly
 LASER_FADE_TIME = 0.25         # s of harmless fade-out
 LASER_WIDTH = 46               # px
 LASER_LENGTH = 2 * math.hypot(SCREEN_WIDTH, SCREEN_HEIGHT) + 200   # always spans the arena
+
+# --- Abilities ----------------------------------------------------------------------------
+ABILITY_KEYS = ("q", "w", "e")     # pygame key names, in ability bar order (Shield, Wall, Dash)
+
+SHIELD_COOLDOWN = 12.0         # s
+SHIELD_DURATION = 1.5          # s the bubble lasts if nothing hits it
+SHIELD_RADIUS = PLAYER_RADIUS + 10     # px; while shielded, the bubble is your hitbox
+
+WALL_COOLDOWN = 18.0
+WALL_DURATION = 3.0
+WALL_LENGTH = 150              # px
+WALL_THICKNESS = 14            # px
+WALL_DISTANCE = 60             # px in front of the player, toward the cursor
+WALL_BLINK_TIME = 0.6          # s before vanishing that the wall blinks
+
+DASH_COOLDOWN = 7.0
+DASH_RANGE = 200               # px
+DASH_SPEED = 1400              # px/s; you travel the distance, so you can be hit mid-dash
+
+# --- Effects ----------------------------------------------------------------------------------
+BURST_DURATION = 0.35          # s; ring shown when a hit is blocked or a bolt hits a wall

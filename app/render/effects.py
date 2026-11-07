@@ -47,3 +47,18 @@ class ClickMarker(Effect):
         for angle in (45, 135, 225, 315):
             d = Vector2(1, 0).rotate(angle)
             pygame.draw.line(surface, tick_color, self.pos + d * (radius + 6), self.pos + d * (radius + 1), 2)
+
+
+class Burst(Effect):
+    """An expanding, fading ring: feedback for a blocked hit or a bolt hitting a wall."""
+
+    def __init__(self, pos, color, scale: float = 1.0) -> None:
+        super().__init__(config.BURST_DURATION)
+        self.pos = Vector2(pos)
+        self.color = color
+        self.scale = scale
+
+    def draw(self, surface: pygame.Surface) -> None:
+        t = self.progress
+        radius = (10 + 34 * t) * self.scale
+        draw_alpha_circle(surface, self.color, self.pos, radius, alpha=230 * (1 - t), width=3)

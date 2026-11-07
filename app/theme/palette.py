@@ -33,6 +33,12 @@ class Palette:
     laser: Color = (255, 110, 196)
     laser_core: Color = (255, 250, 255)
 
+    # Abilities
+    shield: Color = (120, 200, 255)
+    wall: Color = (150, 110, 240)
+    wall_outline: Color = (230, 210, 255)
+    dash: Color = (80, 236, 214)
+
     # Text and feedback
     text: Color = (236, 240, 248)
     text_dim: Color = (162, 174, 196)

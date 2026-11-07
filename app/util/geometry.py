@@ -40,3 +40,17 @@ class RotatedRect:
         dx = local_x - clamp(local_x, -self.length / 2, self.length / 2)
         dy = local_y - clamp(local_y, -self.width / 2, self.width / 2)
         return dx * dx + dy * dy <= radius * radius
+
+    def collides_rect(self, other: "RotatedRect") -> bool:
+        """Exact rotated rectangle vs rotated rectangle test (Separating Axis Theorem).
+
+        Two convex shapes are apart if some axis exists where their shadows don't
+        overlap. For rectangles, only their four edge directions need checking.
+        """
+        mine, theirs = self.corners(), other.corners()
+        for axis in (self.direction, self.normal, other.direction, other.normal):
+            a = [p.dot(axis) for p in mine]
+            b = [p.dot(axis) for p in theirs]
+            if max(a) < min(b) or max(b) < min(a):
+                return False                      # found a gap: no collision
+        return True

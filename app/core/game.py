@@ -9,6 +9,7 @@ from app.meta import APP_NAME
 from app.render.arena import build_arena_background
 from app.render.text import draw_text
 from app.theme.palette import PALETTE, danger_color
+from app.util.mathx import lerp_color
 
 
 class Game:
@@ -49,6 +50,10 @@ class Game:
                     self.running = False
                 elif event.key == pygame.K_r and self.world.over:
                     self.world = World()                      # restart
+                else:
+                    for index, slot in enumerate(self.world.loadout):
+                        if event.key == slot.key:
+                            self.world.cast(index, pygame.mouse.get_pos())
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == config.MOVE_MOUSE_BUTTON:
                 if not self.world.over:
                     self.world.command_move(event.pos, new_click=True)
@@ -84,6 +89,34 @@ class Game:
                              border_radius=3)
         label = "DANGER MAX" if danger >= 1 else f"DANGER {int(danger * 100)}%"
         draw_text(self.screen, label, 14, color, bold=True, midtop=(cx, bar.bottom + 4))
+        self.draw_ability_bar()
+
+    def draw_ability_bar(self) -> None:
+        """One box per skill at the bottom: key, name, and a cooldown that refills from the bottom."""
+        size, gap = 64, 12
+        slots = self.world.loadout
+        total = len(slots) * size + (len(slots) - 1) * gap
+        x = (config.SCREEN_WIDTH - total) // 2
+        y = config.SCREEN_HEIGHT - size - 18
+        for slot in slots:
+            skill = slot.skill
+            box = pygame.Rect(x, y, size, size)
+            pygame.draw.rect(self.screen, PALETTE.track, box, border_radius=10)
+            if skill.ready:
+                pygame.draw.rect(self.screen, skill.color, box, 2, border_radius=10)
+                draw_text(self.screen, skill.name, 15, skill.color, bold=True, center=box.center)
+            else:
+                # The tinted part is the cooldown already recovered; it fills up until ready.
+                fill = box.copy()
+                fill.height = int(size * (1 - skill.cooldown_fraction))
+                fill.bottom = box.bottom
+                if fill.height > 0:
+                    pygame.draw.rect(self.screen, lerp_color(PALETTE.track, skill.color, 0.35), fill,
+                                     border_radius=10)
+                pygame.draw.rect(self.screen, PALETTE.border, box, 2, border_radius=10)
+                draw_text(self.screen, f"{skill.remaining:0.1f}", 20, PALETTE.text, bold=True, center=box.center)
+            draw_text(self.screen, slot.key_label, 13, PALETTE.text_dim, bold=True, topleft=(box.x + 6, box.y + 4))
+            x += size + gap
 
     def draw_game_over(self) -> None:
         self.screen.blit(self.overlay, (0, 0))

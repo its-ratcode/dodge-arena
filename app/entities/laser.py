@@ -21,10 +21,15 @@ class Laser:
         self.shape = RotatedRect(target, direction, config.LASER_LENGTH, config.LASER_WIDTH)
         self.warning_time = warning_time
         self.age = 0.0
+        self.disarmed = False           # set once a shield blocks it, so it can't hit again
 
     @property
     def firing(self) -> bool:
         return self.warning_time <= self.age < self.warning_time + config.LASER_ACTIVE_TIME
+
+    @property
+    def deadly(self) -> bool:
+        return self.firing and not self.disarmed
 
     @property
     def alive(self) -> bool:

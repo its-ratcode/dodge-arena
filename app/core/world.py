@@ -10,7 +10,9 @@ from app.core.difficulty import danger_level, ramp
 from app.entities.bolt import Bolt
 from app.entities.laser import Laser
 from app.entities.player import Player
-from app.render.effects import ClickMarker
+from app.entities.wall import Wall
+from app.render.effects import Burst, ClickMarker, Effect
+from app.skills.loadout import build_loadout
 from app.theme.palette import PALETTE
 
 Threat = Bolt | Laser
@@ -25,8 +27,11 @@ class World:
 
     def __init__(self) -> None:
         self.player = Player((config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2))
+        self.loadout = build_loadout()
         self.bolts: list[Bolt] = []
         self.lasers: list[Laser] = []
+        self.walls: list[Wall] = []
+        self.effects: list[Effect] = []
         self.marker: ClickMarker | None = None
         self.survival_time = 0.0
         self.spawn_timer = config.FIRST_SPAWN_DELAY
@@ -53,22 +58,33 @@ class World:
         else:
             self.marker.pos.update(self.player.destination)
 
+    def cast(self, slot_index: int, aim_point) -> bool:
+        """Cast the skill in a loadout slot, aimed at ``aim_point`` (the cursor)."""
+        if self.over:
+            return False
+        aim = Vector2(aim_point) - self.player.pos
+        aim = aim.normalize() if aim.length_squared() >= 1 else Vector2(self.player.facing)
+        return self.loadout[slot_index].skill.try_cast(self, aim)
+
     # --- Simulation ------------------------------------------------------------------------
     def update(self, dt: float) -> None:
         if self.over:
             return
         self.survival_time += dt
+        for slot in self.loadout:
+            slot.skill.update(dt)
         self.player.update(dt)
         if self.marker:
             self.marker.update(dt)
 
         self.update_spawning(dt)
-        for bolt in self.bolts:
-            bolt.update(dt)
-        for laser in self.lasers:
-            laser.update(dt)
+        for thing in (*self.bolts, *self.lasers, *self.walls, *self.effects):
+            thing.update(dt)
         self.bolts = [b for b in self.bolts if not b.is_off_screen()]
         self.lasers = [laser for laser in self.lasers if laser.alive]
+        self.walls = [w for w in self.walls if w.alive]
+        self.effects = [e for e in self.effects if e.alive]
+        self.block_with_walls()
         self.check_hits()
 
     def update_spawning(self, dt: float) -> None:
@@ -88,16 +104,36 @@ class World:
                 ramp(config.LASER_INTERVAL_MIN_START, config.LASER_INTERVAL_MIN_END, danger),
                 ramp(config.LASER_INTERVAL_MAX_START, config.LASER_INTERVAL_MAX_END, danger))
 
+    def block_with_walls(self) -> None:
+        """Bolts that touch a wall are destroyed. Lasers pass through walls."""
+        survivors = []
+        for bolt in self.bolts:
+            if any(bolt.shape.collides_rect(wall.shape) for wall in self.walls):
+                self.effects.append(Burst(bolt.shape.center, PALETTE.wall))
+            else:
+                survivors.append(bolt)
+        self.bolts = survivors
+
     def check_hits(self) -> None:
         p = self.player
-        for bolt in self.bolts:
-            if bolt.shape.collides_circle(p.pos, p.radius):
-                self.killer = bolt
-                return
+        for bolt in list(self.bolts):
+            if bolt.shape.collides_circle(p.pos, p.hit_radius):
+                if self.player_hit(bolt):
+                    return
+                self.bolts.remove(bolt)                      # blocked: the bolt is destroyed
         for laser in self.lasers:
-            if laser.firing and laser.shape.collides_circle(p.pos, p.radius):
-                self.killer = laser
-                return
+            if laser.deadly and laser.shape.collides_circle(p.pos, p.hit_radius):
+                if self.player_hit(laser):
+                    return
+                laser.disarmed = True                        # blocked: it can't hit again
+
+    def player_hit(self, source: Threat) -> bool:
+        """Resolve a hit. Returns True if it ended the run, False if the shield blocked it."""
+        if self.player.consume_shield():
+            self.effects.append(Burst(self.player.pos, PALETTE.shield, scale=1.4))
+            return False
+        self.killer = source
+        return True
 
     def spawn_bolt(self) -> None:
         """Spawn just outside a random edge, aimed at the player's current position."""
@@ -126,6 +162,8 @@ class World:
     def draw(self, surface: pygame.Surface) -> None:
         if self.marker and self.marker.alive and not self.over:
             self.marker.draw(surface)
+        for wall in self.walls:
+            wall.draw(surface)
         for bolt in self.bolts:
             bolt.draw(surface, highlight=bolt is self.killer)
         if self.lasers:
@@ -134,5 +172,7 @@ class World:
                 laser.draw(self.fx_layer)
             surface.blit(self.fx_layer, (0, 0))
         self.player.draw(surface)
+        for effect in self.effects:
+            effect.draw(surface)
         if self.over:
             pygame.draw.circle(surface, PALETTE.danger, self.player.pos, self.player.radius + 6, 3)
