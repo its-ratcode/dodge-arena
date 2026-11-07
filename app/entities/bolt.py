@@ -15,7 +15,7 @@ class Bolt:
     then flies in a straight line - it never follows the player - until it has
     left the screen on the other side."""
 
-    def __init__(self, spawn_pos, target, speed: float = config.BOLT_SPEED) -> None:
+    def __init__(self, spawn_pos, target, speed: float = config.BOLT_SPEED_START) -> None:
         direction = Vector2(target) - Vector2(spawn_pos)
         if direction.length_squared() == 0:
             direction = SCREEN_CENTER - Vector2(spawn_pos)

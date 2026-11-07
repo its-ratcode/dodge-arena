@@ -6,7 +6,7 @@ at draw time, so changing a color here changes it everywhere.
 
 from dataclasses import dataclass
 
-from app.util.mathx import Color
+from app.util.mathx import Color, lerp_color
 
 
 @dataclass
@@ -30,11 +30,27 @@ class Palette:
     bolt: Color = (225, 60, 70)
     bolt_core: Color = (255, 150, 140)
     bolt_front: Color = (255, 232, 210)      # bright leading edge shows the flight direction
+    laser: Color = (255, 110, 196)
+    laser_core: Color = (255, 250, 255)
 
     # Text and feedback
     text: Color = (236, 240, 248)
     text_dim: Color = (162, 174, 196)
-    danger: Color = (236, 76, 88)
+    accent: Color = (64, 206, 226)           # low danger
+    warning: Color = (250, 196, 80)          # medium danger
+    danger: Color = (236, 76, 88)            # high danger, game over
+    track: Color = (36, 45, 64)              # empty part of progress bars
 
 
 PALETTE = Palette()
+
+
+def danger_color(level: float) -> Color:
+    """Color for a danger level 0..1: accent -> warning -> danger.
+
+    Going through a middle color avoids the muddy grey you get when blending
+    cyan straight into red.
+    """
+    if level < 0.5:
+        return lerp_color(PALETTE.accent, PALETTE.warning, level * 2)
+    return lerp_color(PALETTE.warning, PALETTE.danger, (level - 0.5) * 2)

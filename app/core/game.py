@@ -4,10 +4,11 @@ import pygame
 
 from app import config
 from app.core.world import World
+from app.entities.laser import Laser
 from app.meta import APP_NAME
 from app.render.arena import build_arena_background
 from app.render.text import draw_text
-from app.theme.palette import PALETTE
+from app.theme.palette import PALETTE, danger_color
 
 
 class Game:
@@ -63,16 +64,33 @@ class Game:
         self.screen.fill(PALETTE.background)
         self.screen.blit(self.background, (0, 0))
         self.world.draw(self.screen)
-        draw_text(self.screen, f"{self.world.survival_time:0.1f}s", 32, PALETTE.text, bold=True,
-                  midtop=(config.SCREEN_WIDTH // 2, 14))
+        self.draw_hud()
         if self.world.over:
             self.draw_game_over()
+
+    def draw_hud(self) -> None:
+        """Survival timer with the danger bar underneath."""
+        cx = config.SCREEN_WIDTH // 2
+        timer = draw_text(self.screen, f"{self.world.survival_time:0.1f}s", 32, PALETTE.text, bold=True,
+                          midtop=(cx, 14))
+        danger = self.world.danger
+        color = danger_color(danger)
+        bar = pygame.Rect(0, 0, 180, 6)
+        bar.midtop = (cx, timer.bottom + 6)
+        pygame.draw.rect(self.screen, PALETTE.track, bar, border_radius=3)
+        filled = int(bar.width * danger)
+        if filled > 0:
+            pygame.draw.rect(self.screen, color, (bar.x, bar.y, max(filled, bar.height), bar.height),
+                             border_radius=3)
+        label = "DANGER MAX" if danger >= 1 else f"DANGER {int(danger * 100)}%"
+        draw_text(self.screen, label, 14, color, bold=True, midtop=(cx, bar.bottom + 4))
 
     def draw_game_over(self) -> None:
         self.screen.blit(self.overlay, (0, 0))
         cx, cy = config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2
+        cause = "a laser" if isinstance(self.world.killer, Laser) else "a bolt"
         draw_text(self.screen, "GAME OVER", 64, PALETTE.danger, bold=True, center=(cx, cy - 70))
-        draw_text(self.screen, f"You survived {self.world.survival_time:0.2f} seconds", 26, PALETTE.text,
-                  center=(cx, cy))
+        draw_text(self.screen, f"You survived {self.world.survival_time:0.2f} seconds (hit by {cause})", 26,
+                  PALETTE.text, center=(cx, cy))
         draw_text(self.screen, "Press R to restart   |   Esc to quit", 22, PALETTE.text_dim,
                   center=(cx, cy + 60))
