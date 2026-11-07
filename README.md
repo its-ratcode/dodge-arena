@@ -15,6 +15,8 @@ python -m app
 
 ## Controls
 
-| Key | Action |
+| Input | Action |
 |---|---|
+| Right-click | Walk to the clicked point |
+| Hold right-click | Keep following the cursor |
 | Esc | Quit |

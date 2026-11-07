@@ -14,3 +14,12 @@ MAX_FRAME_DT = 0.05        # clamp each frame's delta time (s) so a hitch can't 
 GRID_SPACING = 50          # px between grid lines
 GRID_MAJOR_EVERY = 4       # every Nth grid line is drawn brighter
 ARENA_BORDER_INSET = 6     # px between the window edge and the arena border
+
+# --- Player -------------------------------------------------------------------------
+PLAYER_RADIUS = 16
+PLAYER_SPEED = 325         # px/s
+MOVE_MOUSE_BUTTON = 3      # pygame button number: 1 = left, 3 = right
+
+# --- Click marker ---------------------------------------------------------------------
+CLICK_MARKER_DURATION = 0.4    # s
+CLICK_MARKER_RADIUS = 12       # px
