@@ -23,11 +23,13 @@ class Skill:
     """
 
     name = "Skill"
+    icon = "none"                       # name of a vector icon in app.render.icons
     cooldown = 1.0                      # s
     is_utility = False                  # utility spells sit in their own group on the bar
 
     def __init__(self) -> None:
         self.remaining = 0.0            # s left on the cooldown
+        self.ready_flash = 0.0          # 1 -> 0 right after the cooldown ends (HUD pulse)
 
     @property
     def color(self) -> Color:
@@ -44,7 +46,15 @@ class Skill:
         return self.remaining / self.cooldown if self.cooldown > 0 else 0.0
 
     def update(self, dt: float) -> None:
+        was_cooling = self.remaining > 0
         self.remaining = max(0.0, self.remaining - dt)
+        self.ready_flash = max(0.0, self.ready_flash - dt * 2.5)
+        if was_cooling and self.remaining == 0:
+            self.ready_flash = 1.0
+
+    def active_fraction(self, world: World) -> float:
+        """How much of the skill's effect is left (1 -> 0), or 0 if nothing is active."""
+        return 0.0
 
     def try_cast(self, world: World, target: Vector2) -> bool:
         """Cast if ready, aimed at ``target`` (the cursor position)."""

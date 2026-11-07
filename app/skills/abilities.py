@@ -20,6 +20,7 @@ class Shield(Skill):
     """A bubble that blocks the next hit (bolt or laser) for a short time."""
 
     name = "Shield"
+    icon = "shield"
     cooldown = config.SHIELD_COOLDOWN
 
     @property
@@ -29,12 +30,21 @@ class Shield(Skill):
     def cast(self, world: World, target: Vector2) -> None:
         world.player.add_shield(config.SHIELD_DURATION)
 
+    def active_fraction(self, world: World) -> float:
+        p = world.player
+        return p.shield_remaining / p.shield_duration if p.shielded else 0.0
+
 
 class WallSkill(Skill):
     """Raises a wall in front of the player, across the direction of the cursor."""
 
     name = "Wall"
+    icon = "wall"
     cooldown = config.WALL_COOLDOWN
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.wall: Wall | None = None       # the last wall raised, for the HUD
 
     @property
     def color(self) -> Color:
@@ -43,13 +53,18 @@ class WallSkill(Skill):
     def cast(self, world: World, target: Vector2) -> None:
         aim = world.aim_direction(target)
         center = world.player.pos + aim * config.WALL_DISTANCE
-        world.walls.append(Wall(center, Vector2(-aim.y, aim.x)))
+        self.wall = Wall(center, Vector2(-aim.y, aim.x))
+        world.walls.append(self.wall)
+
+    def active_fraction(self, world: World) -> float:
+        return self.wall.remaining / self.wall.duration if self.wall and self.wall.alive else 0.0
 
 
 class Dash(Skill):
     """A fast, fixed-distance dash toward the cursor. You can still be hit on the way."""
 
     name = "Dash"
+    icon = "dash"
     cooldown = config.DASH_COOLDOWN
 
     @property
@@ -59,3 +74,6 @@ class Dash(Skill):
     def cast(self, world: World, target: Vector2) -> None:
         aim = world.aim_direction(target)
         world.player.start_dash(world.player.pos + aim * config.DASH_RANGE, config.DASH_SPEED)
+
+    def active_fraction(self, world: World) -> float:
+        return 1.0 if world.player.dashing else 0.0

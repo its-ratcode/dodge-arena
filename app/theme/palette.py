@@ -43,9 +43,17 @@ class Palette:
     sprint: Color = (255, 215, 70)
     blink: Color = (255, 236, 130)
 
+    # Interface
+    panel_top: Color = (26, 34, 52)          # panels are a vertical gradient top -> bottom
+    panel_bottom: Color = (14, 19, 30)
+    line: Color = (48, 60, 86)               # panel borders and separators
+    key_face: Color = (40, 50, 72)           # keycaps showing a key binding
+    key_shadow: Color = (8, 11, 18)
+
     # Text and feedback
     text: Color = (236, 240, 248)
     text_dim: Color = (162, 174, 196)
+    text_faint: Color = (106, 118, 142)
     accent: Color = (64, 206, 226)           # low danger
     warning: Color = (250, 196, 80)          # medium danger
     danger: Color = (236, 76, 88)            # high danger, game over

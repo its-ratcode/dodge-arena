@@ -19,6 +19,7 @@ class Sprint(Skill):
     """A burst of movement speed for a few seconds."""
 
     name = "Sprint"
+    icon = "sprint"
     cooldown = config.SPRINT_COOLDOWN
     is_utility = True
 
@@ -29,11 +30,16 @@ class Sprint(Skill):
     def cast(self, world: World, target: Vector2) -> None:
         world.player.add_speed_buff("sprint", config.SPRINT_MULTIPLIER, config.SPRINT_DURATION)
 
+    def active_fraction(self, world: World) -> float:
+        buff = world.player.speed_buffs.get("sprint")
+        return buff.remaining / buff.duration if buff else 0.0
+
 
 class Blink(Skill):
     """Instantly teleport toward the cursor, up to ``BLINK_RANGE``."""
 
     name = "Blink"
+    icon = "blink"
     cooldown = config.BLINK_COOLDOWN
     is_utility = True
 

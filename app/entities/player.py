@@ -6,7 +6,7 @@ import pygame
 from pygame.math import Vector2
 
 from app import config
-from app.render.shapes import draw_alpha_circle
+from app.render.shapes import draw_alpha_circle, draw_glow
 from app.theme.palette import PALETTE
 from app.util.mathx import Color, clamp
 
@@ -150,6 +150,7 @@ class Player:
             r = self.radius + 7 + math.sin(self.age * 18) * 2.5
             draw_alpha_circle(surface, PALETTE.sprint, self.pos, r, 50)
             draw_alpha_circle(surface, PALETTE.sprint, self.pos, r, 220, width=2)
+        draw_glow(surface, PALETTE.player, self.pos, self.radius * 3, 110)
         pygame.draw.circle(surface, PALETTE.player, self.pos, self.radius)
         highlight = self.pos - Vector2(self.radius, self.radius) * 0.3
         pygame.draw.circle(surface, PALETTE.player_light, highlight, self.radius * 0.45)

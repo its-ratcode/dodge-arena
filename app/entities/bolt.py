@@ -4,6 +4,7 @@ import pygame
 from pygame.math import Vector2
 
 from app import config
+from app.render.shapes import draw_glow
 from app.theme.palette import PALETTE
 from app.util.geometry import RotatedRect
 
@@ -35,6 +36,7 @@ class Bolt:
 
     def draw(self, surface: pygame.Surface, highlight: bool = False) -> None:
         s = self.shape
+        draw_glow(surface, PALETTE.bolt, s.center, s.length * 0.75, 90)
         corners = s.corners()
         pygame.draw.polygon(surface, PALETTE.bolt, corners)
         core = RotatedRect(s.center, s.direction, s.length * 0.78, s.width * 0.36).corners()
