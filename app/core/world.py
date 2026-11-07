@@ -8,9 +8,11 @@ from pygame.math import Vector2
 from app import config
 from app.core.difficulty import danger_level, ramp
 from app.entities.bolt import Bolt
+from app.entities.coin import Coin
 from app.entities.laser import Laser
 from app.entities.player import Player
 from app.entities.wall import Wall
+from app.progression.upgrades import RunStats
 from app.render.effects import BlinkTrail, Burst, ClickMarker, Effect
 from app.skills.loadout import build_loadout
 from app.theme.palette import PALETTE
@@ -19,15 +21,20 @@ Threat = Bolt | Laser
 
 
 class World:
-    """One run: the player, the threats, the survival clock and the spawn timers.
+    """One run: the player, the threats, the coins, the survival clock and the spawn timers.
 
-    A new run is simply a new World. ``killer`` is set to whatever hit the
-    player, which ends the run.
+    A new run is simply a new World. ``stats`` holds the upgrade-dependent
+    numbers for the run. ``killer`` is set to whatever hit the player, which
+    ends the run.
     """
 
-    def __init__(self) -> None:
-        self.player = Player((config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2))
-        self.loadout = build_loadout()
+    def __init__(self, stats: RunStats | None = None) -> None:
+        self.stats = stats or RunStats()
+        self.player = Player((config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2), self.stats.player_speed)
+        self.loadout = build_loadout(self.stats.cooldown_mult)
+        self.coins: list[Coin] = []
+        self.coins_picked = 0                  # value collected this run (banked at game over)
+        self.coin_timer = config.COIN_FIRST_DELAY
         self.bolts: list[Bolt] = []
         self.lasers: list[Laser] = []
         self.walls: list[Wall] = []
@@ -87,6 +94,7 @@ class World:
             self.marker.update(dt)
 
         self.update_spawning(dt)
+        self.update_coins(dt)
         for thing in (*self.bolts, *self.lasers, *self.walls, *self.effects):
             thing.update(dt)
         self.bolts = [b for b in self.bolts if not b.is_off_screen()]
@@ -112,6 +120,36 @@ class World:
             self.laser_timer = random.uniform(
                 ramp(config.LASER_INTERVAL_MIN_START, config.LASER_INTERVAL_MIN_END, danger),
                 ramp(config.LASER_INTERVAL_MAX_START, config.LASER_INTERVAL_MAX_END, danger))
+
+    def update_coins(self, dt: float) -> None:
+        """Spawn coins on a timer (up to a cap), pull them with the magnet, collect on touch."""
+        self.coin_timer -= dt
+        if self.coin_timer <= 0:
+            self.coin_timer += config.COIN_SPAWN_INTERVAL
+            if len(self.coins) < config.COIN_MAX_ON_FIELD:
+                self.spawn_coin()
+        p = self.player
+        for coin in self.coins:
+            coin.update(dt, p.pos, self.stats.magnet_radius)
+            if coin.touches(p.pos, p.radius):
+                coin.remaining = 0
+                self.coins_picked += coin.value
+                self.effects.append(Burst(coin.pos, PALETTE.coin, scale=1.3 if coin.big else 0.8))
+        self.coins = [c for c in self.coins if c.alive]
+
+    def spawn_coin(self) -> None:
+        value = config.BIG_COIN_VALUE if random.random() < config.BIG_COIN_CHANCE else config.COIN_VALUE
+        self.coins.append(Coin(self.open_position(), value))
+
+    def open_position(self) -> Vector2:
+        """A random spot clear of the HUD and not right next to the player."""
+        m = config.COIN_EDGE_MARGIN
+        for _ in range(20):
+            pos = Vector2(random.uniform(m, config.SCREEN_WIDTH - m),
+                          random.uniform(config.COIN_TOP_MARGIN, config.SCREEN_HEIGHT - config.COIN_BOTTOM_MARGIN))
+            if pos.distance_to(self.player.pos) >= config.COIN_MIN_PLAYER_DISTANCE:
+                return pos
+        return pos                             # rare: everywhere tried was close; accept the last spot
 
     def block_with_walls(self) -> None:
         """Bolts that touch a wall are destroyed. Lasers pass through walls."""
@@ -171,6 +209,8 @@ class World:
     def draw(self, surface: pygame.Surface) -> None:
         if self.marker and self.marker.alive and not self.over:
             self.marker.draw(surface)
+        for coin in self.coins:
+            coin.draw(surface)
         for wall in self.walls:
             wall.draw(surface)
         for bolt in self.bolts:

@@ -2,6 +2,7 @@
 
 Layout:
     top center      timer pill, danger bar
+    top right       coins picked up this run
     bottom center   ability bar (abilities | utility spells), key labels under the boxes
     left of bar     active effects (shield, sprint) with the time they have left
 """
@@ -34,6 +35,7 @@ class Hud:
 
     def draw(self, surface: pygame.Surface, world: World) -> None:
         self.draw_timer(surface, world)
+        self.draw_coins(surface, world)
         bar, rects = self.bar_layout(world.loadout)
         draw_panel(surface, bar, "frame")
         for i, (slot, rect) in enumerate(zip(world.loadout, rects)):
@@ -61,6 +63,14 @@ class Hud:
         draw_bar(surface, bar, danger, color)
         label = "DANGER MAX" if danger >= 1 else f"DANGER {int(danger * 100)}%"
         draw_text(surface, label, "label", color, shadow=True, midtop=(cx, bar.bottom + 4))
+
+    def draw_coins(self, surface: pygame.Surface, world: World) -> None:
+        chip = pygame.Rect(0, 0, 96, 36)
+        chip.topright = (config.SCREEN_WIDTH - HUD_MARGIN, HUD_MARGIN)
+        draw_panel(surface, chip, "chip")
+        draw_icon(surface, "coin", (chip.x + 20, chip.centery), 20, PALETTE.coin)
+        draw_text(surface, str(world.coins_picked), "cooldown", PALETTE.coin, shadow=True,
+                  midleft=(chip.x + 36, chip.centery))
 
     # --- Ability bar -----------------------------------------------------------------------
     @staticmethod

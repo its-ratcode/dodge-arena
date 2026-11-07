@@ -1,4 +1,4 @@
-# Dodge Game
+# Dodge Arena
 
 A fast-paced top-down arena dodging game built with Python and pygame.
 
@@ -27,6 +27,31 @@ Two utility spells have long cooldowns, so keep them for emergencies:
 |---|---|
 | Sprint | +50% movement speed for 3 s |
 | Blink | Instantly teleport toward the cursor, up to 160 px. Cancels a dash |
+
+## Coins and upgrades
+
+Coins appear around the arena and vanish after 8 s (they blink first). Big coins are worth 5.
+At the end of a run you also get 1 coin for every 5 s you survived.
+
+Coins buy permanent upgrades, and selling one refunds exactly what it cost:
+
+| Upgrade | Per level | Max |
+|---|---|---|
+| Swift Boots | +5% movement speed | 5 |
+| Ability Haste | -6% Shield / Wall / Dash cooldowns | 5 |
+| Thick Bubble | +0.3 s Shield | 4 |
+| Long Wall | +25 px Wall length | 4 |
+| Long Sprint | +0.5 s Sprint | 4 |
+| Far Blink | +20 px Blink range | 3 |
+| Coin Magnet | +40 px coin pull radius | 4 |
+
+Progress is saved to `save.json` in your user data folder. Delete it to start over:
+
+| OS | Folder |
+|---|---|
+| Windows | `%APPDATA%\Dodge Arena` |
+| macOS | `~/Library/Application Support/Dodge Arena` |
+| Linux | `~/.local/share/Dodge Arena` (or `$XDG_DATA_HOME/Dodge Arena`) |
 
 ## Getting started
 

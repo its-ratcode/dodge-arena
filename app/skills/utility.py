@@ -28,7 +28,7 @@ class Sprint(Skill):
         return PALETTE.sprint
 
     def cast(self, world: World, target: Vector2) -> None:
-        world.player.add_speed_buff("sprint", config.SPRINT_MULTIPLIER, config.SPRINT_DURATION)
+        world.player.add_speed_buff("sprint", config.SPRINT_MULTIPLIER, world.stats.sprint_duration)
 
     def active_fraction(self, world: World) -> float:
         buff = world.player.speed_buffs.get("sprint")
@@ -36,7 +36,7 @@ class Sprint(Skill):
 
 
 class Blink(Skill):
-    """Instantly teleport toward the cursor, up to ``BLINK_RANGE``."""
+    """Instantly teleport toward the cursor, up to the run's blink range."""
 
     name = "Blink"
     icon = "blink"
@@ -49,7 +49,8 @@ class Blink(Skill):
 
     def cast(self, world: World, target: Vector2) -> None:
         offset = Vector2(target) - world.player.pos
-        distance = min(offset.length(), config.BLINK_RANGE)
+        max_range = world.stats.blink_range
+        distance = min(offset.length(), max_range)
         if distance < 1:                                  # cursor on the player: full range ahead
-            distance = config.BLINK_RANGE
+            distance = max_range
         world.blink(world.aim_direction(target) * distance)

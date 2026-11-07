@@ -25,7 +25,15 @@ class SkillSlot:
         return self.key_name.upper()
 
 
-def build_loadout() -> list[SkillSlot]:
-    """Fresh skills (all ready) for a new run: abilities first, then utility spells."""
+def build_loadout(cooldown_mult: float = 1.0) -> list[SkillSlot]:
+    """Fresh skills (all ready) for a new run: abilities first, then utility spells.
+
+    ``cooldown_mult`` (from Ability Haste) shortens ability cooldowns only;
+    utility spells keep theirs.
+    """
     pairs = [*zip(config.ABILITY_KEYS, ABILITIES), *zip(config.UTILITY_KEYS, UTILITY_SPELLS)]
-    return [SkillSlot(key, cls()) for key, cls in pairs]
+    slots = [SkillSlot(key, cls()) for key, cls in pairs]
+    for slot in slots:
+        if not slot.skill.is_utility:
+            slot.skill.cooldown *= cooldown_mult       # an instance value, shadowing the class default
+    return slots

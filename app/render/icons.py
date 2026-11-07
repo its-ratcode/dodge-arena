@@ -46,10 +46,16 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
             pygame.draw.line(surface, color, p(x0, 0), p(x1, 0), w)
         pygame.draw.line(surface, color, p(-0.15, 0), p(0.85, 0), w)
         pygame.draw.lines(surface, color, False, [p(0.4, -0.42), p(0.88, 0), p(0.4, 0.42)], w)
+    elif name == "coin":
+        # Always gold (``color`` is ignored): a dark rim, the face and a small shine.
+        r = max(3, round(s * 0.82))
+        pygame.draw.circle(surface, PALETTE.coin_dark, (cx, cy), r)
+        pygame.draw.circle(surface, PALETTE.coin, (cx, cy), max(1, r - 2))
+        pygame.draw.circle(surface, PALETTE.coin_shine, p(-0.3, -0.3), max(1, round(r * 0.3)))
     else:
         # Unknown name: a plain ring, so a missing icon is visible but harmless.
         pygame.draw.circle(surface, color, (cx, cy), max(3, int(s * 0.7)), w)
 
 
-ICON_NAMES = ("shield", "wall", "dash", "sprint", "blink")
+ICON_NAMES = ("shield", "wall", "dash", "sprint", "blink", "coin")
 """Every icon drawn above."""

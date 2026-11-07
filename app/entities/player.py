@@ -28,12 +28,12 @@ class Player:
     named speed buffs that multiply the walking speed.
     """
 
-    def __init__(self, pos) -> None:
+    def __init__(self, pos, speed: float = config.PLAYER_SPEED) -> None:
         self.pos = Vector2(pos)
         self.destination = Vector2(pos)
         self.facing = Vector2(1, 0)            # last movement direction
         self.radius = config.PLAYER_RADIUS
-        self.base_speed = config.PLAYER_SPEED
+        self.base_speed = speed                 # walking speed before buffs (Swift Boots raises it)
         self.speed_buffs: dict[str, SpeedBuff] = {}
         self.shield_remaining = 0.0
         self.shield_duration = 0.0

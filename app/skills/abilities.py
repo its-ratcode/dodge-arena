@@ -28,7 +28,7 @@ class Shield(Skill):
         return PALETTE.shield
 
     def cast(self, world: World, target: Vector2) -> None:
-        world.player.add_shield(config.SHIELD_DURATION)
+        world.player.add_shield(world.stats.shield_duration)
 
     def active_fraction(self, world: World) -> float:
         p = world.player
@@ -53,7 +53,7 @@ class WallSkill(Skill):
     def cast(self, world: World, target: Vector2) -> None:
         aim = world.aim_direction(target)
         center = world.player.pos + aim * config.WALL_DISTANCE
-        self.wall = Wall(center, Vector2(-aim.y, aim.x))
+        self.wall = Wall(center, Vector2(-aim.y, aim.x), length=world.stats.wall_length)
         world.walls.append(self.wall)
 
     def active_fraction(self, world: World) -> float:

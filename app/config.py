@@ -86,6 +86,29 @@ SPRINT_MULTIPLIER = 1.5        # x movement speed
 BLINK_COOLDOWN = 25.0
 BLINK_RANGE = 160              # px; a closer cursor means a shorter blink
 
+# --- Coins ------------------------------------------------------------------------------------
+COIN_FIRST_DELAY = 2.0         # s into a run before the first coin
+COIN_SPAWN_INTERVAL = 2.5      # s between coins
+COIN_MAX_ON_FIELD = 4
+COIN_LIFETIME = 8.0            # s before an uncollected coin disappears
+COIN_BLINK_TIME = 2.0          # s before vanishing that the coin blinks
+COIN_RADIUS = 9                # px
+COIN_VALUE = 1
+BIG_COIN_VALUE = 5
+BIG_COIN_CHANCE = 0.12
+BIG_COIN_RADIUS_SCALE = 1.5
+COIN_MAGNET_SPEED = 320        # px/s a coin flies toward you inside the magnet radius
+COIN_EDGE_MARGIN = 70          # px from the left/right edges where coins never spawn ...
+COIN_TOP_MARGIN = 120          # ... the timer at the top ...
+COIN_BOTTOM_MARGIN = 140       # ... and the ability bar at the bottom
+COIN_MIN_PLAYER_DISTANCE = 150     # px; coins never spawn right on top of you
+COINS_PER_SECOND_SURVIVED = 0.2    # end-of-run bonus: 1 coin per 5 s alive
+
+# --- Progression --------------------------------------------------------------------------------
+# Upgrade prices and effects are in app/progression/upgrades.py.
+MIN_COOLDOWN_MULT = 0.3        # cooldowns never drop below 30% however much haste you buy
+SAVE_FILENAME = "save.json"    # in the user data folder (app.core.storage); delete it to reset progress
+
 # --- Effects ----------------------------------------------------------------------------------
 BURST_DURATION = 0.35          # s; ring shown when a hit is blocked or a bolt hits a wall
 BLINK_EFFECT_DURATION = 0.4    # s

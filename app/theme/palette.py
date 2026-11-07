@@ -43,6 +43,11 @@ class Palette:
     sprint: Color = (255, 215, 70)
     blink: Color = (255, 236, 130)
 
+    # Coins
+    coin: Color = (255, 200, 60)
+    coin_dark: Color = (170, 110, 20)        # rim
+    coin_shine: Color = (255, 246, 210)
+
     # Interface
     panel_top: Color = (26, 34, 52)          # panels are a vertical gradient top -> bottom
     panel_bottom: Color = (14, 19, 30)
