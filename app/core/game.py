@@ -1,12 +1,12 @@
-"""The Game: owns the window and runs the main loop."""
+"""The Game: owns the window, the main loop and the current run."""
 
 import pygame
 
 from app import config
-from app.entities.player import Player
+from app.core.world import World
 from app.meta import APP_NAME
 from app.render.arena import build_arena_background
-from app.render.effects import ClickMarker
+from app.render.text import draw_text
 from app.theme.palette import PALETTE
 
 
@@ -14,6 +14,7 @@ class Game:
     """Creates the window and runs a frame-rate independent main loop.
 
     Each frame: handle input -> update the simulation by ``dt`` seconds -> draw.
+    A run lives in a ``World``; restarting just creates a new one.
     """
 
     def __init__(self) -> None:
@@ -22,8 +23,9 @@ class Game:
         pygame.display.set_caption(APP_NAME)
         self.clock = pygame.time.Clock()
         self.background = build_arena_background(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
-        self.player = Player((config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2))
-        self.marker: ClickMarker | None = None
+        self.overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        self.overlay.fill((0, 0, 0, 160))
+        self.world = World()
         self.running = True
 
     # --- Main loop ----------------------------------------------------------------------
@@ -41,31 +43,36 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.running = False
+                elif event.key == pygame.K_r and self.world.over:
+                    self.world = World()                      # restart
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == config.MOVE_MOUSE_BUTTON:
-                self.command_move(event.pos, new_click=True)
-
-    def command_move(self, pos, new_click: bool) -> None:
-        """Send the player to ``pos``. A fresh click restarts the marker animation;
-        while the button is held, the marker follows the cursor and re-pulses."""
-        self.player.move_to(pos)
-        if new_click or self.marker is None or not self.marker.alive:
-            self.marker = ClickMarker(self.player.destination)
-        else:
-            self.marker.pos.update(self.player.destination)
+                if not self.world.over:
+                    self.world.command_move(event.pos, new_click=True)
 
     def update(self, dt: float) -> None:
         # Holding the move button keeps updating the destination.
-        if pygame.mouse.get_pressed()[config.MOVE_MOUSE_BUTTON - 1]:
-            self.command_move(pygame.mouse.get_pos(), new_click=False)
-        self.player.update(dt)
-        if self.marker:
-            self.marker.update(dt)
+        if not self.world.over and pygame.mouse.get_pressed()[config.MOVE_MOUSE_BUTTON - 1]:
+            self.world.command_move(pygame.mouse.get_pos(), new_click=False)
+        self.world.update(dt)
 
+    # --- Drawing ------------------------------------------------------------------------
     def draw(self) -> None:
         self.screen.fill(PALETTE.background)
         self.screen.blit(self.background, (0, 0))
-        if self.marker and self.marker.alive:
-            self.marker.draw(self.screen)
-        self.player.draw(self.screen)
+        self.world.draw(self.screen)
+        draw_text(self.screen, f"{self.world.survival_time:0.1f}s", 32, PALETTE.text, bold=True,
+                  midtop=(config.SCREEN_WIDTH // 2, 14))
+        if self.world.over:
+            self.draw_game_over()
+
+    def draw_game_over(self) -> None:
+        self.screen.blit(self.overlay, (0, 0))
+        cx, cy = config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2
+        draw_text(self.screen, "GAME OVER", 64, PALETTE.danger, bold=True, center=(cx, cy - 70))
+        draw_text(self.screen, f"You survived {self.world.survival_time:0.2f} seconds", 26, PALETTE.text,
+                  center=(cx, cy))
+        draw_text(self.screen, "Press R to restart   |   Esc to quit", 22, PALETTE.text_dim,
+                  center=(cx, cy + 60))

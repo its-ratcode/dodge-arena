@@ -23,3 +23,11 @@ MOVE_MOUSE_BUTTON = 3      # pygame button number: 1 = left, 3 = right
 # --- Click marker ---------------------------------------------------------------------
 CLICK_MARKER_DURATION = 0.4    # s
 CLICK_MARKER_RADIUS = 12       # px
+
+# --- Bolts (the threats) ----------------------------------------------------------------
+BOLT_SPEED = 400               # px/s
+BOLT_SPAWN_INTERVAL = 0.8      # s between bolts
+BOLT_LENGTH = 70               # px, along the flight direction
+BOLT_WIDTH = 20                # px, across the flight direction
+BOLT_SPAWN_MARGIN = 10         # px outside the window edge where bolts appear
+FIRST_SPAWN_DELAY = 1.0        # s of calm at the start of a run
