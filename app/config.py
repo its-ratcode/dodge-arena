@@ -24,6 +24,7 @@ ARENA_BORDER_INSET = 6     # px between the window edge and the arena border
 PLAYER_RADIUS = 16
 PLAYER_SPEED = 325         # px/s
 MOVE_MOUSE_BUTTON = 3      # pygame button number: 1 = left, 3 = right
+PAUSE_KEY = "escape"       # pygame key name; the game also pauses when the window loses focus
 
 # --- Click marker ---------------------------------------------------------------------
 CLICK_MARKER_DURATION = 0.4    # s

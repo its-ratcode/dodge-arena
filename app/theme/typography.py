@@ -21,8 +21,11 @@ class TextStyle:
 
 TEXT_STYLES: dict[str, TextStyle] = {
     "title":    TextStyle(FONT_DISPLAY, 64, True),
+    "heading":  TextStyle(FONT_DISPLAY, 40, True),      # card headings: PAUSED, GAME OVER
+    "stat":     TextStyle(FONT_DISPLAY, 34, True),      # a big number on a card
     "subtitle": TextStyle(FONT_BODY, 24),
-    "hint":     TextStyle(FONT_BODY, 18),
+    "button":   TextStyle(FONT_DISPLAY, 18, True),
+    "small":    TextStyle(FONT_BODY, 15),
     "timer":    TextStyle(FONT_DISPLAY, 28, True),
     "cooldown": TextStyle(FONT_DISPLAY, 22, True),
     "label":    TextStyle(FONT_DISPLAY, 13, True),

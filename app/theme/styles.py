@@ -24,7 +24,15 @@ PANEL_STYLES: dict[str, PanelStyle] = {
     "frame": PanelStyle(radius=RADIUS_LG, shadow=22),        # big containers (the ability bar)
     "chip": PanelStyle(radius=RADIUS_MD, shadow=8, border="border"),   # small pills (the timer)
     "slot": PanelStyle(radius=RADIUS_MD, shadow=0, border="border"),   # one ability box
+    "card": PanelStyle(radius=RADIUS_LG, shadow=30),         # the centered box of a menu screen
+    "button": PanelStyle(radius=RADIUS_MD, shadow=6),
 }
+
+# Menus (px)
+BUTTON_WIDTH = 280
+BUTTON_HEIGHT = 48
+BUTTON_GAP = 12
+CARD_PAD = 28               # padding inside a menu card
 
 # HUD layout (px)
 HUD_MARGIN = 12             # gap between the HUD and the window edges

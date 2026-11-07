@@ -1,0 +1,61 @@
+"""The Scene base class and drawing helpers shared by menu screens."""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from typing import TYPE_CHECKING
+
+import pygame
+
+from app import config
+from app.render.shapes import draw_panel
+
+if TYPE_CHECKING:                       # scenes call back into the Game; only needed for type hints
+    from app.core.game import Game
+
+
+class Scene:
+    """One screen. Subclasses override what they need; the defaults do nothing."""
+
+    def __init__(self, game: Game) -> None:
+        self.game = game
+
+    def handle_event(self, event: pygame.event.Event) -> None:
+        pass
+
+    def update(self, dt: float) -> None:
+        pass
+
+    def draw(self, surface: pygame.Surface) -> None:
+        pass
+
+    def on_focus_lost(self) -> None:
+        """The window lost focus (alt-tab, click outside). Play pauses here."""
+
+
+@lru_cache(maxsize=8)
+def _dim_layer(alpha: int) -> pygame.Surface:
+    layer = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
+    layer.set_alpha(alpha)                  # black by default; only the alpha varies
+    return layer
+
+
+def dim(surface: pygame.Surface, alpha: int) -> None:
+    """Darken the whole screen, so a menu card stands out from the game behind it."""
+    surface.blit(_dim_layer(max(0, min(255, alpha))), (0, 0))
+
+
+def card_rect(width: int, height: int, offset_y: int = 0) -> pygame.Rect:
+    rect = pygame.Rect(0, 0, width, height)
+    rect.center = (config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 + offset_y)
+    return rect
+
+
+def draw_card(surface: pygame.Surface, rect: pygame.Rect) -> None:
+    draw_panel(surface, rect, "card")
+
+
+def ease_out(t: float) -> float:
+    """0..1 -> 0..1, fast at first and gentle at the end (for slide-ins)."""
+    t = max(0.0, min(1.0, t))
+    return 1 - (1 - t) ** 3

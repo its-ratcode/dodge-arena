@@ -85,5 +85,8 @@ python -m app
 | Q / W / E | Shield / Wall / Dash (toward the cursor) |
 | D / F | Sprint / Blink (toward the cursor) |
 | Space | Use the held power-up |
-| R | Restart (after game over) |
-| Esc | Quit |
+| Esc | Pause / resume (the game also pauses when its window loses focus) |
+
+Menus work with the mouse or the keyboard: Up / Down (or Tab) to choose, Enter or Space to confirm,
+and the key shown on a button triggers it directly (R = play again / restart, M = main menu).
+Leaving a run early still banks the coins you picked up.
