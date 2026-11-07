@@ -5,9 +5,11 @@ import pygame
 from app import config
 from app.skills.abilities import Dash, Shield, WallSkill
 from app.skills.base import Skill
+from app.skills.utility import Blink, Sprint
 
-# Slot order = order in the ability bar = order of config.ABILITY_KEYS.
+# Slot order = order in the ability bar = order of the matching keys in config.
 ABILITIES: tuple[type[Skill], ...] = (Shield, WallSkill, Dash)
+UTILITY_SPELLS: tuple[type[Skill], ...] = (Sprint, Blink)
 
 
 class SkillSlot:
@@ -24,5 +26,6 @@ class SkillSlot:
 
 
 def build_loadout() -> list[SkillSlot]:
-    """Fresh skills (all ready) for a new run."""
-    return [SkillSlot(key, cls()) for key, cls in zip(config.ABILITY_KEYS, ABILITIES)]
+    """Fresh skills (all ready) for a new run: abilities first, then utility spells."""
+    pairs = [*zip(config.ABILITY_KEYS, ABILITIES), *zip(config.UTILITY_KEYS, UTILITY_SPELLS)]
+    return [SkillSlot(key, cls()) for key, cls in pairs]

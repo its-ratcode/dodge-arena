@@ -21,6 +21,13 @@ Three abilities help you survive, each aimed with the mouse cursor and on its ow
 | Wall | A wall in front of you, across the cursor direction, that destroys bolts for 3 s. Lasers pass through |
 | Dash | A fast 200 px dash toward the cursor. You can still be hit on the way |
 
+Two utility spells have long cooldowns, so keep them for emergencies:
+
+| Utility spell | Effect |
+|---|---|
+| Sprint | +50% movement speed for 3 s |
+| Blink | Instantly teleport toward the cursor, up to 160 px. Cancels a dash |
+
 ## Getting started
 
 Requires Python 3.10+.
@@ -37,5 +44,6 @@ python -m app
 | Right-click | Walk to the clicked point |
 | Hold right-click | Keep following the cursor |
 | Q / W / E | Shield / Wall / Dash (toward the cursor) |
+| D / F | Sprint / Blink (toward the cursor) |
 | R | Restart (after game over) |
 | Esc | Quit |

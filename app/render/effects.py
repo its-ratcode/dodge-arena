@@ -62,3 +62,22 @@ class Burst(Effect):
         t = self.progress
         radius = (10 + 34 * t) * self.scale
         draw_alpha_circle(surface, self.color, self.pos, radius, alpha=230 * (1 - t), width=3)
+
+
+class BlinkTrail(Effect):
+    """A Blink: a ring bursting out where you left, one closing in where you landed,
+    and a fading streak between them."""
+
+    def __init__(self, start, end) -> None:
+        super().__init__(config.BLINK_EFFECT_DURATION)
+        self.start = Vector2(start)
+        self.end = Vector2(end)
+
+    def draw(self, surface: pygame.Surface) -> None:
+        t = self.progress
+        alpha = 255 * (1 - t)
+        pygame.draw.line(surface, lerp_color(PALETTE.blink, PALETTE.arena_center, t),
+                         self.start, self.end, max(1, int(6 * (1 - t))))
+        draw_alpha_circle(surface, PALETTE.blink, self.start, config.PLAYER_RADIUS + 30 * t, alpha, width=3)
+        draw_alpha_circle(surface, PALETTE.blink, self.end, config.PLAYER_RADIUS + 4 + 22 * (1 - t), alpha,
+                          width=2)

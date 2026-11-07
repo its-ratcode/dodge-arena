@@ -93,13 +93,18 @@ class Game:
 
     def draw_ability_bar(self) -> None:
         """One box per skill at the bottom: key, name, and a cooldown that refills from the bottom."""
-        size, gap = 64, 12
+        size, gap, group_gap = 64, 12, 32       # a wider gap separates abilities from utility spells
         slots = self.world.loadout
-        total = len(slots) * size + (len(slots) - 1) * gap
+        groups = sum(1 for a, b in zip(slots, slots[1:]) if a.skill.is_utility != b.skill.is_utility)
+        total = len(slots) * size + (len(slots) - 1) * gap + groups * (group_gap - gap)
         x = (config.SCREEN_WIDTH - total) // 2
         y = config.SCREEN_HEIGHT - size - 18
+        previous = None
         for slot in slots:
             skill = slot.skill
+            if previous is not None and previous.is_utility != skill.is_utility:
+                x += group_gap - gap
+            previous = skill
             box = pygame.Rect(x, y, size, size)
             pygame.draw.rect(self.screen, PALETTE.track, box, border_radius=10)
             if skill.ready:
@@ -107,12 +112,14 @@ class Game:
                 draw_text(self.screen, skill.name, 15, skill.color, bold=True, center=box.center)
             else:
                 # The tinted part is the cooldown already recovered; it fills up until ready.
-                fill = box.copy()
-                fill.height = int(size * (1 - skill.cooldown_fraction))
-                fill.bottom = box.bottom
-                if fill.height > 0:
-                    pygame.draw.rect(self.screen, lerp_color(PALETTE.track, skill.color, 0.35), fill,
+                # Drawn as a full rounded box with its top erased, so it keeps the box's corners.
+                filled = int(size * (1 - skill.cooldown_fraction))
+                if filled > 0:
+                    tile = pygame.Surface(box.size, pygame.SRCALPHA)
+                    pygame.draw.rect(tile, lerp_color(PALETTE.track, skill.color, 0.35), tile.get_rect(),
                                      border_radius=10)
+                    tile.fill((0, 0, 0, 0), (0, 0, size, size - filled))
+                    self.screen.blit(tile, box)
                 pygame.draw.rect(self.screen, PALETTE.border, box, 2, border_radius=10)
                 draw_text(self.screen, f"{skill.remaining:0.1f}", 20, PALETTE.text, bold=True, center=box.center)
             draw_text(self.screen, slot.key_label, 13, PALETTE.text_dim, bold=True, topleft=(box.x + 6, box.y + 4))

@@ -39,6 +39,10 @@ class Palette:
     wall_outline: Color = (230, 210, 255)
     dash: Color = (80, 236, 214)
 
+    # Utility spells
+    sprint: Color = (255, 215, 70)
+    blink: Color = (255, 236, 130)
+
     # Text and feedback
     text: Color = (236, 240, 248)
     text_dim: Color = (162, 174, 196)

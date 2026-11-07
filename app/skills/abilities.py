@@ -26,7 +26,7 @@ class Shield(Skill):
     def color(self) -> Color:
         return PALETTE.shield
 
-    def cast(self, world: World, aim: Vector2) -> None:
+    def cast(self, world: World, target: Vector2) -> None:
         world.player.add_shield(config.SHIELD_DURATION)
 
 
@@ -40,7 +40,8 @@ class WallSkill(Skill):
     def color(self) -> Color:
         return PALETTE.wall
 
-    def cast(self, world: World, aim: Vector2) -> None:
+    def cast(self, world: World, target: Vector2) -> None:
+        aim = world.aim_direction(target)
         center = world.player.pos + aim * config.WALL_DISTANCE
         world.walls.append(Wall(center, Vector2(-aim.y, aim.x)))
 
@@ -55,5 +56,6 @@ class Dash(Skill):
     def color(self) -> Color:
         return PALETTE.dash
 
-    def cast(self, world: World, aim: Vector2) -> None:
+    def cast(self, world: World, target: Vector2) -> None:
+        aim = world.aim_direction(target)
         world.player.start_dash(world.player.pos + aim * config.DASH_RANGE, config.DASH_SPEED)

@@ -11,7 +11,7 @@ from app.entities.bolt import Bolt
 from app.entities.laser import Laser
 from app.entities.player import Player
 from app.entities.wall import Wall
-from app.render.effects import Burst, ClickMarker, Effect
+from app.render.effects import BlinkTrail, Burst, ClickMarker, Effect
 from app.skills.loadout import build_loadout
 from app.theme.palette import PALETTE
 
@@ -58,13 +58,22 @@ class World:
         else:
             self.marker.pos.update(self.player.destination)
 
-    def cast(self, slot_index: int, aim_point) -> bool:
-        """Cast the skill in a loadout slot, aimed at ``aim_point`` (the cursor)."""
+    def cast(self, slot_index: int, target) -> bool:
+        """Cast the skill in a loadout slot, aimed at ``target`` (the cursor)."""
         if self.over:
             return False
-        aim = Vector2(aim_point) - self.player.pos
-        aim = aim.normalize() if aim.length_squared() >= 1 else Vector2(self.player.facing)
-        return self.loadout[slot_index].skill.try_cast(self, aim)
+        return self.loadout[slot_index].skill.try_cast(self, Vector2(target))
+
+    def aim_direction(self, target) -> Vector2:
+        """Unit vector from the player toward ``target``; the facing direction if they overlap."""
+        aim = Vector2(target) - self.player.pos
+        return aim.normalize() if aim.length_squared() >= 1 else Vector2(self.player.facing)
+
+    def blink(self, offset: Vector2) -> None:
+        """Teleport the player by ``offset`` (kept inside the arena) with its effect."""
+        start = Vector2(self.player.pos)
+        self.player.teleport(start + offset)
+        self.effects.append(BlinkTrail(start, self.player.pos))
 
     # --- Simulation ------------------------------------------------------------------------
     def update(self, dt: float) -> None:

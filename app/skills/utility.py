@@ -1,0 +1,49 @@
+"""The two utility spells: Sprint and Blink. Long cooldowns, meant for emergencies."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pygame.math import Vector2
+
+from app import config
+from app.skills.base import Skill
+from app.theme.palette import PALETTE
+from app.util.mathx import Color
+
+if TYPE_CHECKING:
+    from app.core.world import World
+
+
+class Sprint(Skill):
+    """A burst of movement speed for a few seconds."""
+
+    name = "Sprint"
+    cooldown = config.SPRINT_COOLDOWN
+    is_utility = True
+
+    @property
+    def color(self) -> Color:
+        return PALETTE.sprint
+
+    def cast(self, world: World, target: Vector2) -> None:
+        world.player.add_speed_buff("sprint", config.SPRINT_MULTIPLIER, config.SPRINT_DURATION)
+
+
+class Blink(Skill):
+    """Instantly teleport toward the cursor, up to ``BLINK_RANGE``."""
+
+    name = "Blink"
+    cooldown = config.BLINK_COOLDOWN
+    is_utility = True
+
+    @property
+    def color(self) -> Color:
+        return PALETTE.blink
+
+    def cast(self, world: World, target: Vector2) -> None:
+        offset = Vector2(target) - world.player.pos
+        distance = min(offset.length(), config.BLINK_RANGE)
+        if distance < 1:                                  # cursor on the player: full range ahead
+            distance = config.BLINK_RANGE
+        world.blink(world.aim_direction(target) * distance)

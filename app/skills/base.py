@@ -17,12 +17,14 @@ class Skill:
     """Base class for everything the player can cast.
 
     A subclass sets ``name`` and ``cooldown``, picks its ``color`` from the
-    palette and implements ``cast(world, aim)``. Returning ``False`` from
-    ``cast`` cancels it without starting the cooldown.
+    palette and implements ``cast(world, target)``, where ``target`` is the
+    cursor position. Returning ``False`` from ``cast`` cancels it without
+    starting the cooldown.
     """
 
     name = "Skill"
     cooldown = 1.0                      # s
+    is_utility = False                  # utility spells sit in their own group on the bar
 
     def __init__(self) -> None:
         self.remaining = 0.0            # s left on the cooldown
@@ -44,12 +46,12 @@ class Skill:
     def update(self, dt: float) -> None:
         self.remaining = max(0.0, self.remaining - dt)
 
-    def try_cast(self, world: World, aim: Vector2) -> bool:
-        """Cast if ready. ``aim`` is a unit vector from the player toward the cursor."""
-        if not self.ready or self.cast(world, aim) is False:
+    def try_cast(self, world: World, target: Vector2) -> bool:
+        """Cast if ready, aimed at ``target`` (the cursor position)."""
+        if not self.ready or self.cast(world, target) is False:
             return False
         self.remaining = self.cooldown
         return True
 
-    def cast(self, world: World, aim: Vector2) -> bool | None:
+    def cast(self, world: World, target: Vector2) -> bool | None:
         raise NotImplementedError

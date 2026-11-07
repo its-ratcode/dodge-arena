@@ -76,5 +76,17 @@ DASH_COOLDOWN = 7.0
 DASH_RANGE = 200               # px
 DASH_SPEED = 1400              # px/s; you travel the distance, so you can be hit mid-dash
 
+# --- Utility spells (long cooldowns, for emergencies) ---------------------------------------
+UTILITY_KEYS = ("d", "f")      # pygame key names, in ability bar order (Sprint, Blink)
+
+SPRINT_COOLDOWN = 20.0         # s
+SPRINT_DURATION = 3.0          # s
+SPRINT_MULTIPLIER = 1.5        # x movement speed
+
+BLINK_COOLDOWN = 25.0
+BLINK_RANGE = 160              # px; a closer cursor means a shorter blink
+
 # --- Effects ----------------------------------------------------------------------------------
 BURST_DURATION = 0.35          # s; ring shown when a hit is blocked or a bolt hits a wall
+BLINK_EFFECT_DURATION = 0.4    # s
+SPEED_TRAIL_LENGTH = 8         # positions kept for the trail while sprinting or dashing

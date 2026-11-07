@@ -8,14 +8,24 @@ from pygame.math import Vector2
 from app import config
 from app.render.shapes import draw_alpha_circle
 from app.theme.palette import PALETTE
-from app.util.mathx import clamp
+from app.util.mathx import Color, clamp
+
+
+class SpeedBuff:
+    """A temporary speed multiplier (e.g. Sprint)."""
+
+    def __init__(self, multiplier: float, duration: float) -> None:
+        self.multiplier = multiplier
+        self.duration = duration
+        self.remaining = duration
 
 
 class Player:
-    """Moves toward ``destination`` at a constant speed and stops exactly there.
+    """Moves toward ``destination`` at its current speed and stops exactly there.
 
-    Two ability states live here too: a shield bubble (blocks one hit) and a
-    dash (a fast, fixed-distance move that overrides walking until it ends).
+    Ability states live here too: a shield bubble (blocks one hit), a dash
+    (a fast, fixed-distance move that overrides walking until it ends) and
+    named speed buffs that multiply the walking speed.
     """
 
     def __init__(self, pos) -> None:
@@ -23,11 +33,30 @@ class Player:
         self.destination = Vector2(pos)
         self.facing = Vector2(1, 0)            # last movement direction
         self.radius = config.PLAYER_RADIUS
-        self.speed = config.PLAYER_SPEED
+        self.base_speed = config.PLAYER_SPEED
+        self.speed_buffs: dict[str, SpeedBuff] = {}
         self.shield_remaining = 0.0
         self.shield_duration = 0.0
         self.dash_target: Vector2 | None = None
         self.dash_speed = 0.0
+        self.trail: list[tuple[Vector2, Color]] = []    # recent positions while moving fast
+        self.age = 0.0                                  # s alive; drives small animations
+
+    # --- Speed --------------------------------------------------------------------------
+    @property
+    def speed(self) -> float:
+        speed = self.base_speed
+        for buff in self.speed_buffs.values():
+            speed *= buff.multiplier
+        return speed
+
+    def add_speed_buff(self, name: str, multiplier: float, duration: float) -> None:
+        """Add or refresh a buff. Reusing a name replaces it instead of stacking."""
+        self.speed_buffs[name] = SpeedBuff(multiplier, duration)
+
+    @property
+    def sprinting(self) -> bool:
+        return "sprint" in self.speed_buffs
 
     # --- Shield -------------------------------------------------------------------------
     def add_shield(self, duration: float) -> None:
@@ -69,14 +98,35 @@ class Player:
     def dashing(self) -> bool:
         return self.dash_target is not None
 
+    def teleport(self, point) -> None:
+        """Jump instantly. Cancels a dash and stops at the landing spot."""
+        self.pos = self.clamp_to_arena(point)
+        self.destination = Vector2(self.pos)
+        self.dash_target = None
+        self.trail.clear()
+
     def update(self, dt: float) -> None:
+        self.age += dt
         self.shield_remaining = max(0.0, self.shield_remaining - dt)
+        for name, buff in list(self.speed_buffs.items()):
+            buff.remaining -= dt
+            if buff.remaining <= 0:
+                del self.speed_buffs[name]
+
         if self.dashing:
             arrived = self._step_toward(self.dash_target, self.dash_speed * dt)
             if arrived:
                 self.dash_target = None
         else:
             self._step_toward(self.destination, self.speed * dt)
+
+        # The trail grows while moving fast and shrinks away afterwards.
+        if self.dashing or self.sprinting:
+            self.trail.append((Vector2(self.pos), PALETTE.dash if self.dashing else PALETTE.sprint))
+            if len(self.trail) > config.SPEED_TRAIL_LENGTH:
+                self.trail.pop(0)
+        elif self.trail:
+            self.trail.pop(0)
 
     def _step_toward(self, target: Vector2, step: float) -> bool:
         """Move up to ``step`` px toward ``target``. Returns True on arrival."""
@@ -92,10 +142,14 @@ class Player:
 
     # --- Drawing ------------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
-        if self.dashing:
-            # Short afterimages behind the player while dashing.
-            for k in (3, 2, 1):
-                draw_alpha_circle(surface, PALETTE.dash, self.pos - self.facing * k * 14, self.radius, 40 * (4 - k))
+        count = len(self.trail)
+        for i, (point, color) in enumerate(self.trail):
+            k = (i + 1) / count                       # older = smaller and fainter
+            draw_alpha_circle(surface, color, point, self.radius * (0.4 + 0.6 * k), 80 * k)
+        if self.sprinting:
+            r = self.radius + 7 + math.sin(self.age * 18) * 2.5
+            draw_alpha_circle(surface, PALETTE.sprint, self.pos, r, 50)
+            draw_alpha_circle(surface, PALETTE.sprint, self.pos, r, 220, width=2)
         pygame.draw.circle(surface, PALETTE.player, self.pos, self.radius)
         highlight = self.pos - Vector2(self.radius, self.radius) * 0.3
         pygame.draw.circle(surface, PALETTE.player_light, highlight, self.radius * 0.45)
