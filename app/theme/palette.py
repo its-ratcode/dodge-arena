@@ -43,6 +43,13 @@ class Palette:
     sprint: Color = (255, 215, 70)
     blink: Color = (255, 236, 130)
 
+    # Power-ups and Second Wind
+    stasis: Color = (255, 200, 105)
+    time_warp: Color = (130, 150, 255)
+    warp: Color = (200, 150, 255)
+    nova: Color = (205, 245, 255)
+    second_wind: Color = (255, 232, 150)
+
     # Coins
     coin: Color = (255, 200, 60)
     coin_dark: Color = (170, 110, 20)        # rim

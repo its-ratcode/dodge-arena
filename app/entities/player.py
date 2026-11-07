@@ -39,6 +39,8 @@ class Player:
         self.shield_duration = 0.0
         self.dash_target: Vector2 | None = None
         self.dash_speed = 0.0
+        self.stasis_remaining = 0.0             # frozen and untouchable (Stasis power-up)
+        self.invulnerable_remaining = 0.0       # untouchable but free to move (after Second Wind)
         self.trail: list[tuple[Vector2, Color]] = []    # recent positions while moving fast
         self.age = 0.0                                  # s alive; drives small animations
 
@@ -79,6 +81,22 @@ class Player:
         """While shielded, the bubble is the hitbox."""
         return config.SHIELD_RADIUS if self.shielded else self.radius
 
+    # --- Stasis and invulnerability ------------------------------------------------------------
+    def enter_stasis(self, duration: float) -> None:
+        """Freeze in place. A dash is cancelled; a move order given now runs after it ends."""
+        self.stasis_remaining = duration
+        self.dash_target = None
+        self.destination = Vector2(self.pos)
+
+    @property
+    def in_stasis(self) -> bool:
+        return self.stasis_remaining > 0
+
+    @property
+    def invulnerable(self) -> bool:
+        """Nothing can hit the player: bolts and lasers pass straight through."""
+        return self.in_stasis or self.invulnerable_remaining > 0
+
     # --- Movement -----------------------------------------------------------------------
     def clamp_to_arena(self, point) -> Vector2:
         """Keep a point inside the window so the whole circle stays visible."""
@@ -112,6 +130,12 @@ class Player:
             buff.remaining -= dt
             if buff.remaining <= 0:
                 del self.speed_buffs[name]
+        self.invulnerable_remaining = max(0.0, self.invulnerable_remaining - dt)
+        if self.in_stasis:
+            self.stasis_remaining = max(0.0, self.stasis_remaining - dt)
+            if self.trail:
+                self.trail.pop(0)
+            return                                    # frozen: no movement this frame
 
         if self.dashing:
             arrived = self._step_toward(self.dash_target, self.dash_speed * dt)
@@ -150,16 +174,26 @@ class Player:
             r = self.radius + 7 + math.sin(self.age * 18) * 2.5
             draw_alpha_circle(surface, PALETTE.sprint, self.pos, r, 50)
             draw_alpha_circle(surface, PALETTE.sprint, self.pos, r, 220, width=2)
-        draw_glow(surface, PALETTE.player, self.pos, self.radius * 3, 110)
-        pygame.draw.circle(surface, PALETTE.player, self.pos, self.radius)
+        body, light, outline = PALETTE.player, PALETTE.player_light, PALETTE.player_outline
+        if self.in_stasis:
+            # A golden statue.
+            body, light, outline = PALETTE.stasis, PALETTE.coin_shine, PALETTE.coin_shine
+            draw_glow(surface, PALETTE.stasis, self.pos, self.radius * 3.4, 200)
+        elif self.invulnerable_remaining > 0:
+            # Saved by Second Wind: a pulsing golden ring while untouchable.
+            outline = PALETTE.second_wind
+            r = self.radius + 8 + math.sin(self.age * 14) * 2
+            draw_alpha_circle(surface, PALETTE.second_wind, self.pos, r, 210, width=2)
+        draw_glow(surface, body, self.pos, self.radius * 3, 110)
+        pygame.draw.circle(surface, body, self.pos, self.radius)
         highlight = self.pos - Vector2(self.radius, self.radius) * 0.3
-        pygame.draw.circle(surface, PALETTE.player_light, highlight, self.radius * 0.45)
-        pygame.draw.circle(surface, PALETTE.player_outline, self.pos, self.radius, 2)
+        pygame.draw.circle(surface, light, highlight, self.radius * 0.45)
+        pygame.draw.circle(surface, outline, self.pos, self.radius, 2)
         # A small notch showing which way the player last moved.
         side = Vector2(-self.facing.y, self.facing.x)
         base = self.pos + self.facing * (self.radius + 1)
         tip = self.pos + self.facing * (self.radius + 7)
-        pygame.draw.polygon(surface, PALETTE.player_outline, [tip, base + side * 5, base - side * 5])
+        pygame.draw.polygon(surface, outline, [tip, base + side * 5, base - side * 5])
         if self.shielded:
             self._draw_shield(surface)
 

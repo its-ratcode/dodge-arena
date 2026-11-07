@@ -48,9 +48,4 @@ class Blink(Skill):
         return PALETTE.blink
 
     def cast(self, world: World, target: Vector2) -> None:
-        offset = Vector2(target) - world.player.pos
-        max_range = world.stats.blink_range
-        distance = min(offset.length(), max_range)
-        if distance < 1:                                  # cursor on the player: full range ahead
-            distance = max_range
-        world.blink(world.aim_direction(target) * distance)
+        world.blink_toward(target, world.stats.blink_range)

@@ -3,8 +3,9 @@
 Layout:
     top center      timer pill, danger bar
     top right       coins picked up this run
-    bottom center   ability bar (abilities | utility spells), key labels under the boxes
-    left of bar     active effects (shield, sprint) with the time they have left
+    bottom center   ability bar (abilities | utility spells | power-up), key labels under the boxes
+    left of bar     active effects (stasis, shield, sprint ...) with the time they have left
+    right of bar    Second Wind, if owned: ready, or recharging
 """
 
 from __future__ import annotations
@@ -36,14 +37,21 @@ class Hud:
     def draw(self, surface: pygame.Surface, world: World) -> None:
         self.draw_timer(surface, world)
         self.draw_coins(surface, world)
-        bar, rects = self.bar_layout(world.loadout)
+        slots = [*world.loadout, world.powerup_slot]
+        groups = self.slot_groups(world)
+        bar, rects = self.bar_layout(groups)
         draw_panel(surface, bar, "frame")
-        for i, (slot, rect) in enumerate(zip(world.loadout, rects)):
-            if i and self._new_group(world.loadout, i):
+        for i, (slot, rect) in enumerate(zip(slots, rects)):
+            if i and groups[i] != groups[i - 1]:
                 x = rect.x - (HUD_GROUP_GAP + HUD_SLOT_GAP) // 2
                 pygame.draw.line(surface, PALETTE.line, (x, rect.y + 8), (x, rect.bottom - 8))
-            self.draw_slot(surface, world, slot, rect)
+            if slot.skill is None:
+                self.draw_empty_slot(surface, slot, rect)
+            else:
+                self.draw_slot(surface, world, slot, rect)
         self.draw_buffs(surface, world, bar)
+        if world.second_wind:
+            self.draw_second_wind(surface, world, bar)
 
     # --- Timer and danger -----------------------------------------------------------------
     def draw_timer(self, surface: pygame.Surface, world: World) -> None:
@@ -74,15 +82,17 @@ class Hud:
 
     # --- Ability bar -----------------------------------------------------------------------
     @staticmethod
-    def _new_group(slots: list[SkillSlot], i: int) -> bool:
-        return slots[i].skill.is_utility != slots[i - 1].skill.is_utility
+    def slot_groups(world: World) -> list[int]:
+        """Group of each box, in bar order: 0 = abilities, 1 = utility spells, 2 = power-up."""
+        return [1 if slot.skill.is_utility else 0 for slot in world.loadout] + [2]
 
-    def bar_layout(self, slots: list[SkillSlot]) -> tuple[pygame.Rect, list[pygame.Rect]]:
-        """The frame around the bar and one rect per slot, centered at the bottom."""
+    def bar_layout(self, groups: list[int]) -> tuple[pygame.Rect, list[pygame.Rect]]:
+        """The frame around the bar and one rect per box, centered at the bottom.
+        A wider gap separates the groups."""
         xs, x = [], 0
-        for i in range(len(slots)):
+        for i in range(len(groups)):
             if i:
-                x += HUD_SLOT_GAP + (HUD_GROUP_GAP if self._new_group(slots, i) else 0)
+                x += HUD_SLOT_GAP + (HUD_GROUP_GAP if groups[i] != groups[i - 1] else 0)
             xs.append(x)
             x += HUD_SLOT
         bar = pygame.Rect(0, 0, x + HUD_BAR_PAD * 2, HUD_SLOT + HUD_BAR_PAD + HUD_KEYCAP_SPACE)
@@ -125,12 +135,54 @@ class Hud:
                              rect.inflate(grow * 2, grow * 2), 2, border_radius=radius + grow)
         draw_keycap(surface, slot.key_label, midtop=(rect.centerx, rect.bottom - 8))
 
+    @staticmethod
+    def draw_empty_slot(surface: pygame.Surface, slot: SkillSlot, rect: pygame.Rect) -> None:
+        """The power-up box with nothing held: a faint dashed diamond."""
+        draw_panel(surface, rect, "slot")
+        draw_icon(surface, "empty", (rect.centerx, rect.centery - 2), 30, PALETTE.text_faint)
+        pygame.draw.rect(surface, PALETTE.line, rect, 1, border_radius=PANEL_STYLES["slot"].radius)
+        draw_keycap(surface, slot.key_label, midtop=(rect.centerx, rect.bottom - 8))
+
+    # --- Second Wind ---------------------------------------------------------------------------
+    def draw_second_wind(self, surface: pygame.Surface, world: World, bar: pygame.Rect) -> None:
+        """A badge right of the bar: bright when ready, a filling ring while it recharges."""
+        skill = world.second_wind
+        r = HUD_BUFF_RADIUS
+        x, cy = bar.right + 16 + r, bar.centery - 6
+        pygame.draw.circle(surface, PALETTE.panel_bottom, (x, cy), r)
+        if skill.ready:
+            draw_glow(surface, skill.color, (x, cy), r * 1.6, 70)
+            pygame.draw.circle(surface, skill.color, (x, cy), r, 2)
+            draw_icon(surface, skill.icon, (x, cy), 22, skill.color)
+            label, label_color = "READY", skill.color
+        else:
+            pygame.draw.circle(surface, PALETTE.line, (x, cy), r, 1)
+            draw_progress_ring(surface, (x, cy), r, 1 - skill.cooldown_fraction, skill.color, 3)
+            draw_icon(surface, skill.icon, (x, cy), 22, lerp_color(skill.color, PALETTE.text_faint, 0.65))
+            label, label_color = f"{math.ceil(skill.remaining)}s", PALETTE.text_dim
+        if skill.ready_flash > 0:
+            grow = int(10 * (1 - skill.ready_flash))
+            pygame.draw.circle(surface, lerp_color(PALETTE.panel_bottom, PALETTE.text, skill.ready_flash),
+                               (x, cy), r + grow, 2)
+        draw_text(surface, label, "tiny", label_color, shadow=True, midtop=(x, cy + r + 4))
+
     # --- Active effects ----------------------------------------------------------------------
     @staticmethod
     def buff_list(world: World) -> list[tuple[str, Color, float, float]]:
         """(icon, color, fraction left, seconds left) for each active effect."""
         p = world.player
         buffs = []
+        if p.in_stasis:
+            buffs.append(("stasis", PALETTE.stasis, p.stasis_remaining / config.STASIS_DURATION, p.stasis_remaining))
+        if p.invulnerable_remaining > 0:
+            buffs.append(("second_wind", PALETTE.second_wind,
+                          p.invulnerable_remaining / config.SECOND_WIND_INVULN_TIME, p.invulnerable_remaining))
+        if world.time_warped:
+            buffs.append(("time_warp", PALETTE.time_warp,
+                          world.time_warp_remaining / config.TIME_WARP_DURATION, world.time_warp_remaining))
+        if world.coin_rush:
+            buffs.append(("coin_rush", PALETTE.coin,
+                          world.coin_rush_remaining / config.COIN_RUSH_DURATION, world.coin_rush_remaining))
         if p.shielded:
             buffs.append(("shield", PALETTE.shield, p.shield_remaining / p.shield_duration, p.shield_remaining))
         sprint = p.speed_buffs.get("sprint")

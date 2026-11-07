@@ -64,6 +64,21 @@ class Burst(Effect):
         draw_alpha_circle(surface, self.color, self.pos, radius, alpha=230 * (1 - t), width=3)
 
 
+class NovaWave(Effect):
+    """Nova: a shockwave ring racing out from the player across the whole arena."""
+
+    def __init__(self, pos) -> None:
+        super().__init__(config.NOVA_EFFECT_DURATION)
+        self.pos = Vector2(pos)
+
+    def draw(self, surface: pygame.Surface) -> None:
+        t = self.progress
+        reach = max(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+        draw_alpha_circle(surface, PALETTE.nova, self.pos, 30 + reach * t, alpha=30 * (1 - t) ** 2)
+        draw_alpha_circle(surface, PALETTE.nova, self.pos, 30 + reach * t, alpha=255 * (1 - t),
+                          width=max(1, int(8 * (1 - t))))
+
+
 class BlinkTrail(Effect):
     """A Blink: a ring bursting out where you left, one closing in where you landed,
     and a fading streak between them."""

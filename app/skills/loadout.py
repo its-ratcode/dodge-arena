@@ -13,9 +13,9 @@ UTILITY_SPELLS: tuple[type[Skill], ...] = (Sprint, Blink)
 
 
 class SkillSlot:
-    """One box in the ability bar: a key bound to a skill."""
+    """One box in the ability bar: a key bound to a skill (None = an empty power-up slot)."""
 
-    def __init__(self, key_name: str, skill: Skill) -> None:
+    def __init__(self, key_name: str, skill: Skill | None) -> None:
         self.key_name = key_name
         self.key = pygame.key.key_code(key_name)    # "q" -> pygame.K_q
         self.skill = skill

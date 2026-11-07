@@ -62,6 +62,8 @@ class Game:
                     self.running = False
                 elif event.key == pygame.K_r and self.world.over:
                     self.new_run()                            # restart
+                elif event.key == self.world.powerup_slot.key:
+                    self.world.use_powerup(pygame.mouse.get_pos())
                 else:
                     for index, slot in enumerate(self.world.loadout):
                         if event.key == slot.key:

@@ -33,6 +33,7 @@ UPGRADES: tuple[Upgrade, ...] = (
     Upgrade("sprint", "Long Sprint", max_level=4, base_cost=15, growth=1.5, step=0.5),    # +0.5 s Sprint
     Upgrade("blink", "Far Blink", max_level=3, base_cost=25, growth=1.6, step=20),        # +20 px Blink
     Upgrade("magnet", "Coin Magnet", max_level=4, base_cost=10, growth=1.5, step=40),     # +40 px pull radius
+    Upgrade("second_wind", "Second Wind", max_level=3, base_cost=120, growth=1.6, step=30),   # -30 s recharge
 )
 UPGRADE_BY_ID = {u.id: u for u in UPGRADES}
 
@@ -48,13 +49,20 @@ class RunStats:
     sprint_duration: float = config.SPRINT_DURATION
     blink_range: float = config.BLINK_RANGE
     magnet_radius: float = 0.0          # px; 0 = no magnet
+    second_wind_cooldown: float | None = None   # s to recharge; None = not owned
 
     @classmethod
     def from_levels(cls, levels: dict[str, int]) -> "RunStats":
         def bonus(uid: str) -> float:
             return levels.get(uid, 0) * UPGRADE_BY_ID[uid].step
 
-        return cls(player_speed=config.PLAYER_SPEED * (1 + bonus("boots")),
+        # Second Wind: level 1 unlocks it; each further level shortens the recharge.
+        wind = levels.get("second_wind", 0)
+        wind_cooldown = (max(config.SECOND_WIND_MIN_COOLDOWN,
+                             config.SECOND_WIND_COOLDOWN - (wind - 1) * UPGRADE_BY_ID["second_wind"].step)
+                         if wind > 0 else None)
+
+        return cls(second_wind_cooldown=wind_cooldown,player_speed=config.PLAYER_SPEED * (1 + bonus("boots")),
                    cooldown_mult=max(config.MIN_COOLDOWN_MULT, 1 - bonus("haste")),
                    shield_duration=config.SHIELD_DURATION + bonus("shield"),
                    wall_length=config.WALL_LENGTH + bonus("wall"),

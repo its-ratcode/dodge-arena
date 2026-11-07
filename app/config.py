@@ -86,6 +86,31 @@ SPRINT_MULTIPLIER = 1.5        # x movement speed
 BLINK_COOLDOWN = 25.0
 BLINK_RANGE = 160              # px; a closer cursor means a shorter blink
 
+# --- Power-ups (one-use pickups) ----------------------------------------------------------------
+POWERUP_KEY = "space"          # pygame key name that uses the held power-up
+POWERUP_FIRST_DELAY = 12.0     # s into a run before the first pickup appears
+POWERUP_RESPAWN_MIN = 6.0      # s after one is taken or expires before the next appears
+POWERUP_RESPAWN_MAX = 10.0
+POWERUP_MAP_LIFETIME = 9.0     # s a pickup lies on the map
+POWERUP_BLINK_TIME = 2.5       # s before vanishing that the pickup blinks
+POWERUP_RADIUS = 15            # px
+POWERUP_HOLD_TIME = 25.0       # s a picked-up power-up can be held before it expires
+
+STASIS_DURATION = 1.5          # s frozen and invulnerable: no moving, no casting
+TIME_WARP_DURATION = 3.0       # s
+TIME_WARP_FACTOR = 0.4         # threats and their spawn timers run at 40% speed
+WARP_RANGE = 320               # px; a long-range Blink
+NOVA_EFFECT_DURATION = 0.5     # s; Nova clears every bolt and laser at once
+COIN_RUSH_DURATION = 8.0       # s
+COIN_RUSH_MULT = 2             # coins are worth double ...
+COIN_RUSH_INTERVAL_FACTOR = 0.35   # ... spawn ~3x as often ...
+COIN_RUSH_EXTRA_COINS = 3      # ... and the cap on the field rises by this much
+
+# --- Second Wind (passive upgrade) ---------------------------------------------------------------
+SECOND_WIND_COOLDOWN = 120.0   # s to recharge at level 1; each extra level takes 30 s off
+SECOND_WIND_MIN_COOLDOWN = 10.0
+SECOND_WIND_INVULN_TIME = 1.5  # s of invulnerability after it saves you
+
 # --- Coins ------------------------------------------------------------------------------------
 COIN_FIRST_DELAY = 2.0         # s into a run before the first coin
 COIN_SPAWN_INTERVAL = 2.5      # s between coins

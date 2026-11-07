@@ -52,10 +52,55 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
         pygame.draw.circle(surface, PALETTE.coin_dark, (cx, cy), r)
         pygame.draw.circle(surface, PALETTE.coin, (cx, cy), max(1, r - 2))
         pygame.draw.circle(surface, PALETTE.coin_shine, p(-0.3, -0.3), max(1, round(r * 0.3)))
+    elif name == "coin_rush":
+        # Two overlapping coins.
+        draw_icon(surface, "coin", p(0.28, -0.22), size * 0.62, color)
+        draw_icon(surface, "coin", p(-0.26, 0.24), size * 0.62, color)
+    elif name == "stasis":
+        # An hourglass with sand in the bottom half.
+        pygame.draw.polygon(surface, color, [p(-0.25, 0.45), p(0.25, 0.45), p(0.55, 0.8), p(-0.55, 0.8)])
+        pygame.draw.polygon(surface, color, [p(-0.6, -0.85), p(0.6, -0.85), p(0, 0), p(0.6, 0.85),
+                                             p(-0.6, 0.85), p(0, 0)], w)
+        pygame.draw.line(surface, color, p(-0.75, -0.85), p(0.75, -0.85), w + 1)
+        pygame.draw.line(surface, color, p(-0.75, 0.85), p(0.75, 0.85), w + 1)
+    elif name == "time_warp":
+        # A clock face with two hands.
+        pygame.draw.circle(surface, color, (cx, cy), max(3, round(s * 0.82)), w)
+        pygame.draw.line(surface, color, (cx, cy), p(0, -0.55), w)
+        pygame.draw.line(surface, color, (cx, cy), p(0.4, 0.15), w)
+        pygame.draw.circle(surface, color, (cx, cy), max(1, w))
+    elif name == "warp":
+        # A portal ring on the left with an arrow shooting out of it.
+        portal = pygame.Rect(0, 0, 0.55 * s, 1.6 * s)
+        portal.center = (round(cx - 0.55 * s), round(cy))
+        pygame.draw.ellipse(surface, color, portal, w)
+        pygame.draw.line(surface, color, p(-0.45, 0), p(0.85, 0), w)
+        pygame.draw.lines(surface, color, False, [p(0.4, -0.45), p(0.9, 0), p(0.4, 0.45)], w)
+    elif name == "nova":
+        # A burst: a core with eight rays, long and short alternating.
+        for k in range(8):
+            d = pygame.math.Vector2(1, 0).rotate(k * 45)
+            reach = 0.95 if k % 2 == 0 else 0.68
+            pygame.draw.line(surface, color, p(d.x * 0.42, d.y * 0.42), p(d.x * reach, d.y * reach), w)
+        pygame.draw.circle(surface, color, (cx, cy), max(2, round(s * 0.26)))
+    elif name == "second_wind":
+        # A heart with a small plus cut out of it.
+        r = 0.36
+        pygame.draw.circle(surface, color, p(-0.34, -0.3), max(2, round(s * r)))
+        pygame.draw.circle(surface, color, p(0.34, -0.3), max(2, round(s * r)))
+        pygame.draw.polygon(surface, color, [p(-0.69, -0.18), p(0.69, -0.18), p(0, 0.82)])
+        pygame.draw.line(surface, PALETTE.panel_bottom, p(-0.24, -0.08), p(0.24, -0.08), max(1, w - 1))
+        pygame.draw.line(surface, PALETTE.panel_bottom, p(0, -0.32), p(0, 0.16), max(1, w - 1))
+    elif name == "empty":
+        # A dashed diamond: an empty power-up slot.
+        corners = [p(0, -0.7), p(0.7, 0), p(0, 0.7), p(-0.7, 0)]
+        for a, b in zip(corners, corners[1:] + corners[:1]):
+            pygame.draw.line(surface, color, a, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), max(1, w - 1))
     else:
         # Unknown name: a plain ring, so a missing icon is visible but harmless.
         pygame.draw.circle(surface, color, (cx, cy), max(3, int(s * 0.7)), w)
 
 
-ICON_NAMES = ("shield", "wall", "dash", "sprint", "blink", "coin")
+ICON_NAMES = ("shield", "wall", "dash", "sprint", "blink", "coin", "coin_rush", "stasis", "time_warp", "warp",
+              "nova", "second_wind", "empty")
 """Every icon drawn above."""

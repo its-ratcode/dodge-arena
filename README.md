@@ -28,6 +28,19 @@ Two utility spells have long cooldowns, so keep them for emergencies:
 | Sprint | +50% movement speed for 3 s |
 | Blink | Instantly teleport toward the cursor, up to 160 px. Cancels a dash |
 
+## Power-ups
+
+Every so often a power-up appears on the map (one at a time; it blinks before it vanishes).
+Walk over it to pick it up, then press Space to use it. It has one use and expires 25 s after pickup.
+
+| Power-up | Effect |
+|---|---|
+| Stasis | Frozen in place for 1.5 s: nothing can hit you, but you can't move or cast |
+| Time Warp | Bolts, lasers and their spawning slow to 40% for 3 s. You keep your speed |
+| Warp | A long Blink, up to 320 px toward the cursor |
+| Nova | Destroys every bolt and laser on screen, even lasers still warning |
+| Coin Rush | For 8 s coins spawn ~3x as often, more fit on the field, and each is worth double |
+
 ## Coins and upgrades
 
 Coins appear around the arena and vanish after 8 s (they blink first). Big coins are worth 5.
@@ -44,6 +57,7 @@ Coins buy permanent upgrades, and selling one refunds exactly what it cost:
 | Long Sprint | +0.5 s Sprint | 4 |
 | Far Blink | +20 px Blink range | 3 |
 | Coin Magnet | +40 px coin pull radius | 4 |
+| Second Wind | Survive one fatal hit, then 1.5 s untouchable. Recharges in 120 s, 30 s less per extra level | 3 |
 
 Progress is saved to `save.json` in your user data folder. Delete it to start over:
 
@@ -70,5 +84,6 @@ python -m app
 | Hold right-click | Keep following the cursor |
 | Q / W / E | Shield / Wall / Dash (toward the cursor) |
 | D / F | Sprint / Blink (toward the cursor) |
+| Space | Use the held power-up |
 | R | Restart (after game over) |
 | Esc | Quit |
