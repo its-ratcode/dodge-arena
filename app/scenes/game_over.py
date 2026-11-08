@@ -1,25 +1,31 @@
 """The game over scene: what the run was worth, and what to do next."""
 
+import math
+
 import pygame
 
+from app import config
 from app.entities.laser import Laser
 from app.render.icons import draw_icon
 from app.render.text import draw_text, text_size
 from app.scenes.base import Scene, card_rect, dim, draw_card, ease_out
-from app.theme.accessibility import wobble
+from app.theme.accessibility import A11Y, wobble
 from app.theme.palette import PALETTE
 from app.theme.styles import BUTTON_GAP, BUTTON_HEIGHT, CARD_PAD
 from app.ui.widgets import Button, ButtonList
 from app.util.timefmt import fmt_time
 
-CARD_DELAY = 0.45       # s the moment of death stays visible before the card appears
+CARD_DELAY = config.DEATH_SEQUENCE_TIME     # s of slow-motion death beat before the card appears
 CARD_SLIDE = 0.3        # s for the card to slide into place
 CARD_SIZE = (440, 490)
 
 
 class GameOverScene(Scene):
-    """Input is ignored until the card is in place, so keys mashed while dying
+    """First a short slow-motion beat with pulsing red edges, then the card.
+    Input is ignored until the card is in place, so keys mashed while dying
     can't skip it by accident."""
+
+    music = "ducked"
 
     def __init__(self, game) -> None:
         super().__init__(game)
@@ -46,6 +52,8 @@ class GameOverScene(Scene):
     def update(self, dt: float) -> None:
         if self.age < CARD_DELAY <= self.age + dt and self.game.result and self.game.result.new_best:
             self.game.audio.play("new_best")               # a fanfare as the card arrives
+        if self.age < CARD_DELAY:
+            self.game.world.update_aftermath(dt * config.DEATH_SLOWMO)     # threats drift on in slow motion
         self.age += dt
         card = self.card()
         count = len(self.buttons.buttons)
@@ -55,6 +63,13 @@ class GameOverScene(Scene):
 
     def draw(self, surface: pygame.Surface) -> None:
         self.game.draw_world(surface)
+        # Red edges: pulsing during the death beat (steady with reduced flashing), then calm.
+        if self.age < CARD_DELAY:
+            pulse = 0.5 if A11Y.reduce_flashing else 0.5 + 0.5 * math.sin(self.age * 18)
+            self.game.red_vignette.set_alpha(int(150 + 100 * pulse))
+        else:
+            self.game.red_vignette.set_alpha(110)
+        surface.blit(self.game.red_vignette, (0, 0))
         dim(surface, round(170 * self.shown))
         if self.shown <= 0:
             return
@@ -67,6 +82,8 @@ class GameOverScene(Scene):
             cause = "Hit by a laser" if isinstance(world.killer, Laser) else "Hit by a bolt"
         else:
             cause = "Run ended"
+        calls = world.close_calls
+        cause += f"   |   {calls} close call{'' if calls == 1 else 's'}"
         draw_text(surface, cause, "small", PALETTE.text_dim, midtop=(cx, y + 50))
         draw_text(surface, fmt_time(world.survival_time), "stat", PALETTE.text, shadow=True, midtop=(cx, y + 80))
         if result.new_best:

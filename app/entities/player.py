@@ -166,7 +166,9 @@ class Player:
         return False
 
     # --- Drawing ------------------------------------------------------------------------
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self, surface: pygame.Surface, show_path: bool = False) -> None:
+        if show_path and not self.dashing and not self.in_stasis:
+            self._draw_path(surface)
         count = len(self.trail)
         for i, (point, color) in enumerate(self.trail):
             k = (i + 1) / count                       # older = smaller and fainter
@@ -197,6 +199,16 @@ class Player:
         pygame.draw.polygon(surface, outline, [tip, base + side * 5, base - side * 5])
         if self.shielded:
             self._draw_shield(surface)
+
+    def _draw_path(self, surface: pygame.Surface) -> None:
+        """Faint dots from the player to where they are walking."""
+        to_target = self.destination - self.pos
+        distance = to_target.length()
+        if distance < config.PATH_DOT_SPACING:
+            return
+        step = to_target / distance * config.PATH_DOT_SPACING
+        for i in range(1, int(distance // config.PATH_DOT_SPACING) + 1):
+            draw_alpha_circle(surface, PALETTE.marker, self.pos + step * i, 2, 110)
 
     def _draw_shield(self, surface: pygame.Surface) -> None:
         r = config.SHIELD_RADIUS

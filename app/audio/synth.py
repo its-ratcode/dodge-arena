@@ -89,12 +89,17 @@ class Synth:
                            i * stagger) for i, f in enumerate(freqs)))
 
     @staticmethod
-    def to_sound(samples: Samples, channels: int = 1) -> pygame.mixer.Sound:
-        """Float samples -> a 16-bit pygame Sound (copied to both sides for stereo)."""
+    def to_pcm(samples: Samples, channels: int = 1) -> bytes:
+        """Float samples -> raw 16-bit audio bytes (copied to both sides for stereo)."""
         pcm = array("h", (int(max(-1.0, min(1.0, v)) * 32767) for v in samples))
         if channels == 2:
             stereo = array("h", bytes(len(pcm) * 4))
             stereo[0::2] = pcm
             stereo[1::2] = pcm
             pcm = stereo
-        return pygame.mixer.Sound(buffer=pcm.tobytes())
+        return pcm.tobytes()
+
+    @staticmethod
+    def to_sound(samples: Samples, channels: int = 1) -> pygame.mixer.Sound:
+        """Float samples -> a pygame Sound."""
+        return pygame.mixer.Sound(buffer=Synth.to_pcm(samples, channels))

@@ -15,7 +15,13 @@ if TYPE_CHECKING:                       # scenes call back into the Game; only n
 
 
 class Scene:
-    """One screen. Subclasses override what they need; the defaults do nothing."""
+    """One screen. Subclasses override what they need; the defaults do nothing.
+
+    ``music`` picks the soundtrack: "menu" (calm), "run" (follows danger) or
+    "ducked" (the run's music, quieter: pause and game over).
+    """
+
+    music = "menu"
 
     def __init__(self, game: Game) -> None:
         self.game = game

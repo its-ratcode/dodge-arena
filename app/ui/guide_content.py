@@ -35,6 +35,10 @@ def build_guide(settings: Settings) -> list[Section]:
                 f"the key.",
                 f"Press {key['pause']} to pause at any time. The game also pauses when its window loses "
                 f"focus (you can turn that off in Settings).",
+                f"Close calls pay: a bolt or laser that passes within {config.NEAR_MISS_DISTANCE} px without "
+                f"hitting you is worth {config.CLOSE_CALL_COINS} coin. Nothing counts while you are untouchable.",
+                f"Danger is announced at {', '.join(pct(m) for m in config.DANGER_MILESTONES[:-1])} and MAX, "
+                f"and a fanfare plays every {sec(config.SURVIVAL_MILESTONE_INTERVAL)} you survive.",
             ]),
         ]),
         Section("Threats", [

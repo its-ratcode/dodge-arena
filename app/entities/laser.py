@@ -23,6 +23,8 @@ class Laser:
         self.warning_time = warning_time
         self.age = 0.0
         self.disarmed = False           # set once a shield blocks it, so it can't hit again
+        self.grazed = False             # fired while the player was just outside it ...
+        self.near_miss_counted = False  # ... and has already paid out as a close call
 
     @property
     def firing(self) -> bool:

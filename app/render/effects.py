@@ -5,6 +5,8 @@ from pygame.math import Vector2
 
 from app import config
 from app.render.shapes import draw_alpha_circle
+from app.render.text import get_font
+from app.theme.accessibility import wobble
 from app.theme.palette import PALETTE
 from app.util.mathx import lerp_color
 
@@ -62,6 +64,65 @@ class Burst(Effect):
         t = self.progress
         radius = (10 + 34 * t) * self.scale
         draw_alpha_circle(surface, self.color, self.pos, radius, alpha=230 * (1 - t), width=3)
+
+
+class FloatingText(Effect):
+    """A short word or number that rises and fades: "+1", "BLOCKED", "CLOSE!".
+
+    ``color_name`` is a palette field, read at draw time. With reduced motion
+    it fades in place instead of rising.
+    """
+
+    def __init__(self, pos, text: str, color_name: str) -> None:
+        super().__init__(config.FLOATING_TEXT_DURATION)
+        self.pos = Vector2(pos)
+        self.text = text
+        self.color_name = color_name
+        self.images: tuple[pygame.Surface, pygame.Surface] | None = None    # rendered once, on first draw
+
+    def draw(self, surface: pygame.Surface) -> None:
+        t = self.progress
+        if self.images is None:
+            font = get_font("float")
+            self.images = (font.render(self.text, True, getattr(PALETTE, self.color_name)),
+                           font.render(self.text, True, PALETTE.key_shadow))
+        image, shade = self.images
+        rise = wobble(38 * (1 - (1 - t) ** 3))
+        rect = image.get_rect(center=(round(self.pos.x), round(self.pos.y - rise)))
+        alpha = int(255 * (1 - t ** 2))
+        shade.set_alpha(alpha // 2)
+        image.set_alpha(alpha)
+        surface.blit(shade, rect.move(0, 2))
+        surface.blit(image, rect)
+
+
+class Toast:
+    """A short message at the top of the screen ("Second Wind is ready").
+    It slides in, stays ``TOAST_DURATION`` seconds and fades out."""
+
+    def __init__(self, text: str, color_name: str, icon: str | None = None) -> None:
+        self.text = text
+        self.color_name = color_name
+        self.icon = icon
+        self.age = 0.0
+
+    @property
+    def alive(self) -> bool:
+        return self.age < config.TOAST_DURATION
+
+    def update(self, dt: float) -> None:
+        self.age += dt
+
+    @property
+    def alpha(self) -> int:
+        fade_in = self.age / 0.2
+        fade_out = (config.TOAST_DURATION - self.age) / 0.45
+        return int(255 * max(0.0, min(1.0, fade_in, fade_out)))
+
+    @property
+    def slide(self) -> float:
+        """px above its place while sliding in (0 once settled)."""
+        return wobble(-12 * (1 - min(1.0, self.age / 0.25)) ** 3)
 
 
 class NovaWave(Effect):

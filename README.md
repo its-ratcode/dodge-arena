@@ -47,7 +47,8 @@ Walk over it to pick it up, then press Space to use it. It has one use and expir
 ## Coins and upgrades
 
 Coins appear around the arena and vanish after 8 s (they blink first). Big coins are worth 5.
-At the end of a run you also get 1 coin for every 5 s you survived.
+At the end of a run you also get 1 coin for every 5 s you survived, and every **close call**
+(a bolt or laser passing within 26 px without hitting you) is worth 1 coin.
 
 Spend coins in the **Shop** (from the main menu or the game over screen) on permanent upgrades.
 Selling a level refunds exactly what it cost, and "Refund all" resets your build:
@@ -79,9 +80,11 @@ Everything is in **Settings** and saved right away:
 |---|---|
 | Accessibility | Color modes (Deuteranopia, Protanopia, Tritanopia, High contrast), your own color for the player, bolts and lasers, threat outlines, reduce flashing, reduced motion |
 | Gameplay | Game speed (50-100%), laser warning time (100-200%), starting danger, pause on focus loss, frame rate |
-| Audio | Master and sound effect volume, menu sounds, laser audio cue (beeps and a charge-up before lasers fire) |
+| Display | Screen shake, movement path preview |
+| Audio | Master, sound effect and music volume, adaptive music, menu sounds, laser audio cue (beeps and a charge-up before lasers fire) |
 
-Every sound is synthesized in code when the game starts: there are no sound files.
+Every sound and the music are synthesized in code when the game starts: there are no sound files.
+The soundtrack is adaptive: it gains layers (drums, arpeggio, lead) as danger rises.
 Without an audio device the game simply runs silently.
 
 Runs with a slower game speed or longer laser warnings still earn coins but don't set best times.

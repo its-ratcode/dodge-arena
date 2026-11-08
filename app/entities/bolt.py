@@ -1,6 +1,7 @@
 """Bolts: rectangles that fly straight through the spot the player stood on."""
 
 import pygame
+import pygame.gfxdraw
 from pygame.math import Vector2
 
 from app import config
@@ -23,6 +24,8 @@ class Bolt:
             direction = SCREEN_CENTER - Vector2(spawn_pos)
         self.shape = RotatedRect(spawn_pos, direction, config.BOLT_LENGTH, config.BOLT_WIDTH)
         self.velocity = self.shape.direction * speed
+        self.grazing = False                # came within close-call distance of the player ...
+        self.near_miss_counted = False      # ... and has already paid out as a close call
 
     def update(self, dt: float) -> None:
         self.shape.center += self.velocity * dt
@@ -34,6 +37,14 @@ class Bolt:
         outside = (c.x < -margin or c.x > config.SCREEN_WIDTH + margin or
                    c.y < -margin or c.y > config.SCREEN_HEIGHT + margin)
         return outside and self.velocity.dot(c - SCREEN_CENTER) > 0
+
+    def draw_trail(self, surface: pygame.Surface) -> None:
+        """A faint streak behind the bolt, so its direction reads at a glance.
+        gfxdraw blends the alpha straight onto the surface (no extra full-screen layer needed)."""
+        corners = self.shape.corners()
+        tail = self.shape.center - self.shape.direction * (self.shape.length * 1.9)
+        points = [(round(p.x), round(p.y)) for p in (corners[2], corners[3], tail)]
+        pygame.gfxdraw.filled_polygon(surface, points, (*PALETTE.bolt, 55))
 
     def draw(self, surface: pygame.Surface, highlight: bool = False) -> None:
         s = self.shape

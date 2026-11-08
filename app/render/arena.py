@@ -1,4 +1,4 @@
-"""The arena background: a radial gradient floor with a subtle grid and border."""
+"""Full-screen layers built once: the arena background, and the red vignette of the death beat."""
 
 import math
 
@@ -41,4 +41,18 @@ def build_arena_background(width: int, height: int) -> pygame.Surface:
     inset = config.ARENA_BORDER_INSET
     pygame.draw.rect(surface, PALETTE.border, surface.get_rect().inflate(-inset * 2, -inset * 2), 1,
                      border_radius=BORDER_RADIUS)
+    return surface
+
+
+def build_vignette(width: int, height: int, color, strength: int) -> pygame.Surface:
+    """A full-screen tint that is strongest at the edges and clear in the middle
+    (the red edges of the death beat). Blit it with ``set_alpha`` to pulse it."""
+    surface = pygame.Surface((width, height), pygame.SRCALPHA)
+    center = (width // 2, height // 2)
+    max_radius = int(math.hypot(width, height) / 2) + 40
+    steps = 40
+    for i in range(steps):
+        t = i / (steps - 1)
+        pygame.draw.circle(surface, (*color, int(strength * (1 - t) ** 2)), center, int(max_radius * (1 - 0.6 * t)))
+    pygame.draw.circle(surface, (*color, 0), center, int(max_radius * 0.4))
     return surface

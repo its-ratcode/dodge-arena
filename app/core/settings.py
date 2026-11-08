@@ -27,8 +27,13 @@ OPTIONS: dict[str, tuple[object, tuple]] = {
     # Audio
     "master_volume": (80, VOLUMES),
     "sfx_volume": (80, VOLUMES),
+    "music_volume": (50, VOLUMES),
+    "adaptive_music": (True, ON_OFF),                       # music gains layers as danger rises
     "ui_sounds": (True, ON_OFF),                            # hover / click sounds in menus
     "laser_audio_cue": (True, ON_OFF),                      # beeps and a charge-up before lasers fire
+    # Display
+    "screen_shake": (True, ON_OFF),
+    "show_path": (True, ON_OFF),                            # dotted line to where you are walking
     # Accessibility
     "color_mode": ("default", tuple(COLOR_MODES)),
     "color_player": ("Auto", tuple(SWATCHES)),

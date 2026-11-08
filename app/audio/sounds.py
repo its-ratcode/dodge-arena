@@ -71,13 +71,25 @@ def build_sound_bank(s: Synth) -> dict[str, Samples]:
                                (s.tone(1800, 0.2, freq_end=600, wave="saw", decay=15, volume=0.12), 0))
 
     # --- Run events ----------------------------------------------------------------------------------------
+    bank["ready"] = s.tone(660, 0.12, decay=18, volume=0.28)
+    # Close call: a fast whoosh with a bright glint.
+    bank["near_miss"] = s.mix((s.noise(0.2, attack=0.08, decay=12, volume=0.32, smooth=0.35), 0),
+                              (s.tone(1600, 0.12, freq_end=2400, decay=20, volume=0.12), 0.05))
+    # Danger milestone: a rising noise sweep that slams into a low hit.
+    bank["danger"] = s.mix((s.noise(0.6, attack=0.55, decay=0, volume=0.22, smooth=0.3), 0),
+                           (s.tone(80, 0.6, freq_end=40, decay=5, volume=0.5), 0.55),
+                           (s.noise(0.3, decay=12, volume=0.28, smooth=0.2), 0.55),
+                           (s.tone(110, 0.5, wave="square", decay=4, volume=0.12), 0.55))
+    # Survival milestone: a short fanfare.
+    bank["milestone"] = s.mix((s.arpeggio([880, 1109, 1319, 1760], 0.06, 0.2, wave="sine", volume=0.28), 0),
+                              (s.bell([1760, 2637], 0.9, decay=3, volume=0.22), 0.24))
     bank["go"] = s.mix((s.tone(880, 0.10, decay=20, volume=0.3), 0), (s.tone(1320, 0.30, decay=9, volume=0.3), 0.08))
     bank["second_wind"] = s.bell([784, 988, 1175, 1568], 1.2, decay=3, volume=0.35, stagger=0.04)
     bank["second_wind_ready"] = s.mix((s.tone(1175, 0.15, decay=14, volume=0.22), 0),
                                       (s.tone(1568, 0.30, decay=9, volume=0.22), 0.08))
-    bank["death"] = s.mix((s.tone(420, 1.1, freq_end=55, wave="saw", decay=3, volume=0.25), 0),
-                          (s.noise(0.5, decay=8, volume=0.4, smooth=0.1), 0),
-                          (s.tone(70, 0.8, decay=5, volume=0.5), 0))
+    bank["death"] = s.mix((s.tone(420, 1.1, freq_end=55, wave="saw", decay=3, volume=0.22), 0),
+                          (s.noise(0.5, decay=8, volume=0.3, smooth=0.1), 0),      # random: kept low enough
+                          (s.tone(70, 0.8, decay=5, volume=0.42), 0))                # that the sum never clips
     bank["new_best"] = s.mix((s.arpeggio([784, 988, 1175], 0.09, 0.2, volume=0.3), 0),
                              (s.bell([1568, 2349], 1.0, decay=3, volume=0.3), 0.27))
     return bank

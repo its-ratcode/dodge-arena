@@ -14,6 +14,8 @@ from app.util.timefmt import fmt_time
 class PauseScene(Scene):
     """Nothing updates while paused, so the run continues exactly where it stopped."""
 
+    music = "ducked"
+
     def __init__(self, game, play: PlayScene) -> None:
         super().__init__(game)
         self.play = play

@@ -145,6 +145,30 @@ SOUND_MIN_GAP = 0.03           # s; the same sound can't retrigger faster than t
 COIN_COMBO_WINDOW = 1.5        # s; coins grabbed within this window of each other rise in pitch ...
 COIN_COMBO_STEPS = 6           # ... through this many pitches
 LASER_CHARGE_SOUND_TIME = 0.6  # s before a laser fires that its charge-up whine starts
+MUSIC_BPM = 128                # tempo of the soundtrack
+MUSIC_BARS = 4                 # loop length in bars (one chord per bar: Am - F - C - G)
+MUSIC_LEVEL_THRESHOLDS = (0.2, 0.45, 0.75)     # danger at which the music gains a layer
+MUSIC_DUCK = 0.45              # music volume factor while paused or on the game over card
+
+# --- Game feel -------------------------------------------------------------------------------
+SHAKE_DECAY = 9.0              # how quickly screen shake settles (higher = faster)
+SHAKE_BLOCK = 6                # px of shake when the Shield blocks a hit ...
+SHAKE_SECOND_WIND = 12         # ... when Second Wind saves you ...
+SHAKE_NOVA = 9                 # ... when Nova goes off ...
+SHAKE_DEATH = 16               # ... and when a hit ends the run
+HITSTOP_BLOCK = 0.05           # s the action freezes on a blocked hit, so it lands with weight ...
+HITSTOP_SECOND_WIND = 0.12     # ... and on a Second Wind save
+DEATH_SEQUENCE_TIME = 0.9      # s of slow motion after the fatal hit, before the game over card
+DEATH_SLOWMO = 0.25            # threats move at this speed during it
+INTRO_READY_TIME = 0.8         # s "GET READY" shows ...
+INTRO_GO_TIME = 0.55           # ... then "GO!"
+TOAST_DURATION = 2.6           # s a pop-up message stays
+FLOATING_TEXT_DURATION = 0.8   # s a "+1" / "BLOCKED" rises and fades
+PATH_DOT_SPACING = 18          # px between the dots of the movement path preview
+NEAR_MISS_DISTANCE = 26        # px; a threat passing this close without hitting is a close call ...
+CLOSE_CALL_COINS = 1           # ... and pays this much (risk = reward)
+DANGER_MILESTONES = (0.25, 0.5, 0.75, 1.0)     # announced with a message and a sound
+SURVIVAL_MILESTONE_INTERVAL = 30.0             # s; a fanfare every time you last this much longer
 
 # --- Effects ----------------------------------------------------------------------------------
 BURST_DURATION = 0.35          # s; ring shown when a hit is blocked or a bolt hits a wall

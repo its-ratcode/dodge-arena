@@ -1,7 +1,8 @@
 """The in-game HUD.
 
 Layout:
-    top center      timer pill, danger bar
+    top center      timer pill, danger bar, pop-up messages under it
+    middle          "GET READY" / "GO!" at the start of a run
     top right       coins picked up this run
     top left        frame rate, if "Show frame rate" is on
     bottom center   ability bar (abilities | utility spells | power-up), key labels under the boxes
@@ -12,6 +13,7 @@ Layout:
 from __future__ import annotations
 
 import math
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 import pygame
@@ -20,9 +22,9 @@ from app import config
 from app.render.icons import draw_icon
 from app.render.shapes import (draw_bar, draw_cooldown_sweep, draw_glow, draw_panel,
                                draw_progress_ring)
-from app.render.text import draw_keycap, draw_text
+from app.render.text import draw_keycap, draw_text, get_font, text_size
 from app.skills.loadout import SkillSlot
-from app.theme.accessibility import A11Y
+from app.theme.accessibility import A11Y, wobble
 from app.theme.palette import PALETTE, danger_color
 from app.theme.styles import (HUD_BAR_PAD, HUD_BUFF_RADIUS, HUD_GROUP_GAP, HUD_KEYCAP_SPACE, HUD_MARGIN,
                               HUD_SLOT, HUD_SLOT_GAP, PANEL_STYLES)
@@ -31,6 +33,29 @@ from app.util.timefmt import fmt_time
 
 if TYPE_CHECKING:                       # the HUD only reads a World; it never creates one
     from app.core.world import World
+
+TOAST_TOP = 104         # px; the first pop-up message sits just under the danger label
+
+
+@lru_cache(maxsize=8)
+def _banner(text: str, color: Color) -> pygame.Surface:
+    """ "GET READY" / "GO!" rendered once (big text is slow to render every frame)."""
+    return get_font("banner").render(text, True, color)
+
+
+@lru_cache(maxsize=32)
+def _toast_pill(text: str, color: Color, icon: str | None) -> pygame.Surface:
+    """A message pill, built once per text and color; only its alpha changes while it shows."""
+    width = text_size(text, "button")[0] + (56 if icon else 32)
+    pill = pygame.Surface((width, 34), pygame.SRCALPHA)
+    pygame.draw.rect(pill, (*PALETTE.panel_bottom, 235), pill.get_rect(), border_radius=17)
+    pygame.draw.rect(pill, (*color, 255), pill.get_rect(), 1, border_radius=17)
+    x = 16
+    if icon:
+        draw_icon(pill, icon, (x + 8, 17), 16, color)
+        x += 26
+    draw_text(pill, text, "button", PALETTE.text, midleft=(x, 17))
+    return pill
 
 
 class Hud:
@@ -57,6 +82,41 @@ class Hud:
         self.draw_buffs(surface, world, bar)
         if world.second_wind:
             self.draw_second_wind(surface, world, bar)
+        self.draw_toasts(surface, world)
+        self.draw_intro(surface, world)
+
+    # --- Messages ------------------------------------------------------------------------------
+    @staticmethod
+    def draw_toasts(surface: pygame.Surface, world: World) -> None:
+        """The newest three messages, stacked under the danger bar."""
+        y = TOAST_TOP
+        for toast in world.toasts[-3:]:
+            pill = _toast_pill(toast.text, getattr(PALETTE, toast.color_name), toast.icon)
+            pill.set_alpha(toast.alpha)
+            surface.blit(pill, pill.get_rect(midtop=(config.SCREEN_WIDTH // 2, round(y + toast.slide))))
+            y += 40
+
+    @staticmethod
+    def draw_intro(surface: pygame.Surface, world: World) -> None:
+        """ "GET READY" for a moment at the start of a run, then "GO!"."""
+        t = world.survival_time
+        ready, go = config.INTRO_READY_TIME, config.INTRO_GO_TIME
+        if t >= ready + go or world.over:
+            return
+        if t < ready:
+            k = t / ready
+            text, color, size = "GET READY", PALETTE.text, 1.0
+            alpha = 255 * min(1.0, k * 4) * (1.0 if k < 0.8 else (1 - k) / 0.2)
+        else:
+            k = (t - ready) / go
+            text, color = "GO!", PALETTE.accent
+            size = 1.0 + wobble(0.3 * (1 - k))                    # a small pop, unless motion is reduced
+            alpha = 255 * (1 - k)
+        image = _banner(text, color)
+        if size != 1.0:
+            image = pygame.transform.smoothscale_by(image, size)
+        image.set_alpha(int(alpha))
+        surface.blit(image, image.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2 - 90)))
 
     # --- Timer and danger -----------------------------------------------------------------
     def draw_timer(self, surface: pygame.Surface, world: World) -> None:

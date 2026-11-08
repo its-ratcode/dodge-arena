@@ -25,6 +25,8 @@ TEXT_STYLES: dict[str, TextStyle] = {
     "stat":     TextStyle(FONT_DISPLAY, 34, True),      # a big number on a card
     "subtitle": TextStyle(FONT_BODY, 24),
     "button":   TextStyle(FONT_DISPLAY, 18, True),
+    "float":    TextStyle(FONT_DISPLAY, 18, True),      # "+1", "BLOCKED" rising over the arena
+    "banner":   TextStyle(FONT_DISPLAY, 56, True),      # "GET READY" / "GO!"
     "small":    TextStyle(FONT_BODY, 15),
     "body":     TextStyle(FONT_BODY, 17),               # paragraphs in the guide
     "timer":    TextStyle(FONT_DISPLAY, 28, True),

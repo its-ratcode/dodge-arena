@@ -15,11 +15,12 @@ from app.entities.pickup import PowerUpPickup
 from app.entities.player import Player
 from app.entities.wall import Wall
 from app.progression.upgrades import RunStats
-from app.render.effects import BlinkTrail, Burst, ClickMarker, Effect, NovaWave
+from app.render.effects import BlinkTrail, Burst, ClickMarker, Effect, FloatingText, NovaWave, Toast
 from app.skills.loadout import SkillSlot, build_loadout
 from app.skills.passive import SecondWind
 from app.skills.powerups import POWERUP_POOL, PowerUp
 from app.theme.palette import PALETTE
+from app.util.timefmt import fmt_time
 
 Threat = Bolt | Laser
 
@@ -73,6 +74,8 @@ class World:
         self.coin_combo = 0                    # quick pickups in a row (raises the coin sound's pitch)
         self.last_coin_time = -10.0
         self.events: list[str] = []
+        self.toasts: list[Toast] = []          # pop-up messages, drawn by the HUD
+        self.close_calls = 0
         self.bolts: list[Bolt] = []
         self.lasers: list[Laser] = []
         self.walls: list[Wall] = []
@@ -82,6 +85,9 @@ class World:
         self.spawn_timer = config.FIRST_SPAWN_DELAY
         self.laser_timer = config.LASER_FIRST_DELAY
         self.killer: Threat | None = None
+        # Milestones already passed: a run that starts at a higher danger doesn't announce the ones below it.
+        self.danger_milestone = sum(1 for m in config.DANGER_MILESTONES if self.danger >= m)
+        self.next_survival_milestone = config.SURVIVAL_MILESTONE_INTERVAL
         # Transparent layer for lasers (they need alpha); cleared and reused every frame.
         self.fx_layer = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), pygame.SRCALPHA)
         self.tint = pygame.Surface((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))     # Time Warp screen tint
@@ -166,13 +172,21 @@ class World:
         threat_dt = dt * config.TIME_WARP_FACTOR if self.time_warped else dt
         self.time_warp_remaining = max(0.0, self.time_warp_remaining - dt)
         self.coin_rush_remaining = max(0.0, self.coin_rush_remaining - dt)
+        before = self.survival_time
         self.survival_time += dt
+        if before < config.INTRO_READY_TIME <= self.survival_time:
+            self.events.append("go")                       # "GET READY" turns into "GO!"
+        self.check_milestones()
         for slot in self.loadout:
             slot.skill.update(dt)
         if self.second_wind:
             self.second_wind.update(dt)
             if self.second_wind.ready_flash == 1.0:          # recharged this very frame
                 self.events.append("second_wind_ready")
+                self.toast("Second Wind is ready", "second_wind", "second_wind")
+        for toast in self.toasts:
+            toast.update(dt)
+        self.toasts = [t for t in self.toasts if t.alive]
         self.player.update(dt)
         if self.marker:
             self.marker.update(dt)
@@ -192,6 +206,67 @@ class World:
         self.effects = [e for e in self.effects if e.alive]
         self.block_with_walls()
         self.check_hits()
+        if not self.over:
+            self.detect_close_calls()
+
+    def update_aftermath(self, dt: float) -> None:
+        """After the fatal hit: only threats, effects and messages keep moving (the slow-motion beat)."""
+        for thing in (*self.bolts, *self.lasers, *self.effects, *self.toasts):
+            thing.update(dt)
+        self.effects = [e for e in self.effects if e.alive]
+        self.toasts = [t for t in self.toasts if t.alive]
+
+    # --- Feedback ------------------------------------------------------------------------------
+    def toast(self, text: str, color_name: str, icon: str | None = None) -> None:
+        self.toasts.append(Toast(text, color_name, icon))
+
+    def float_text(self, pos, text: str, color_name: str) -> None:
+        self.effects.append(FloatingText(pos, text, color_name))
+
+    def check_milestones(self) -> None:
+        """Announce each danger step once, and every SURVIVAL_MILESTONE_INTERVAL seconds survived."""
+        milestones = config.DANGER_MILESTONES
+        while self.danger_milestone < len(milestones) and self.danger >= milestones[self.danger_milestone]:
+            m = milestones[self.danger_milestone]
+            self.danger_milestone += 1
+            self.toast("MAX DANGER" if m >= 1 else f"Danger {int(m * 100)}%", "danger", "bolt")
+            self.events.append("danger")
+        if self.survival_time >= self.next_survival_milestone:
+            self.toast(f"{fmt_time(self.next_survival_milestone)[:-2]} survived!", "warning", "time_warp")
+            self.events.append("milestone")
+            self.next_survival_milestone += config.SURVIVAL_MILESTONE_INTERVAL
+
+    def detect_close_calls(self) -> None:
+        """A bolt that comes within NEAR_MISS_DISTANCE and then passes without hitting, or a
+        firing laser that just misses, is a close call: risk pays a coin. Nothing counts while
+        the player is untouchable."""
+        p = self.player
+        if p.invulnerable:
+            return
+        zone = p.hit_radius + config.NEAR_MISS_DISTANCE
+        for bolt in self.bolts:
+            if bolt.near_miss_counted:
+                continue
+            if bolt.shape.collides_circle(p.pos, zone):
+                bolt.grazing = True
+            elif bolt.grazing:                             # it was close and has now gone past
+                bolt.near_miss_counted = True
+                self.close_call(bolt.shape.center)
+        for laser in self.lasers:
+            if laser.near_miss_counted or laser.disarmed:
+                continue
+            if laser.firing and laser.shape.collides_circle(p.pos, zone + 10):
+                laser.grazed = True
+            elif laser.grazed and not laser.firing:
+                laser.near_miss_counted = True
+                self.close_call(p.pos)
+
+    def close_call(self, pos) -> None:
+        self.close_calls += 1
+        self.coins_picked += config.CLOSE_CALL_COINS
+        self.float_text(self.player.pos + Vector2(0, -26), "CLOSE!", "accent")
+        self.effects.append(Burst(pos, PALETTE.accent, scale=0.5))
+        self.events.append("near_miss")
 
     def update_laser(self, laser: Laser, dt: float) -> None:
         """Age a laser, noting the moments its charge-up starts and its beam fires."""
@@ -237,6 +312,7 @@ class World:
                 coin.remaining = 0
                 self.coins_picked += coin.value * multiplier
                 self.effects.append(Burst(coin.pos, PALETTE.coin, scale=1.3 if coin.big else 0.8))
+                self.float_text(coin.pos, f"+{coin.value * multiplier}", "coin")
                 self.coin_sound(coin)
         self.coins = [c for c in self.coins if c.alive]
 
@@ -252,6 +328,7 @@ class World:
         if self.powerup_slot.skill:
             self.powerup_hold -= dt
             if self.powerup_hold <= 0:
+                self.toast(f"{self.powerup_slot.skill.name} expired", "text_faint", self.powerup_slot.skill.icon)
                 self.powerup_slot.skill = None                      # held too long: it expires
                 self.events.append("powerup_lost")
         if self.pickup is None:
@@ -264,7 +341,9 @@ class World:
         if self.pickup.alive and self.pickup.touches(p.pos, p.radius):
             self.powerup_slot.skill = self.pickup.kind()
             self.powerup_hold = config.POWERUP_HOLD_TIME
-            self.effects.append(Burst(self.pickup.pos, self.pickup.kind.color_of(), scale=1.3))
+            kind = self.pickup.kind
+            self.effects.append(Burst(self.pickup.pos, kind.color_of(), scale=1.3))
+            self.toast(f"{kind.name}: press {self.powerup_slot.key_label}", kind.color_name, kind.icon)
             self.events.append("powerup_get")
         elif self.pickup.alive:
             return
@@ -326,12 +405,15 @@ class World:
         p = self.player
         if p.consume_shield():
             self.effects.append(Burst(p.pos, PALETTE.shield, scale=1.4))
+            self.float_text(p.pos + Vector2(0, -26), "BLOCKED", "shield")
             self.events.append("block")
             return False
         if self.second_wind and self.second_wind.ready:
             self.second_wind.trigger()
             p.invulnerable_remaining = config.SECOND_WIND_INVULN_TIME
             self.effects.append(Burst(p.pos, PALETTE.second_wind, scale=1.8))
+            self.float_text(p.pos + Vector2(0, -26), "SAVED!", "second_wind")
+            self.toast("Second Wind saved you!", "second_wind", "second_wind")
             self.events.append("second_wind")
             return False
         self.killer = source
@@ -363,13 +445,15 @@ class World:
         self.events.append(f"laser_warn{min(2, int(self.danger * 3))}")     # 3 tiers: higher and faster beeps
 
     # --- Drawing -------------------------------------------------------------------------------
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self, surface: pygame.Surface, show_path: bool = False) -> None:
         if self.marker and self.marker.alive and not self.over:
             self.marker.draw(surface)
         for coin in self.coins:
             coin.draw(surface)
         if self.pickup:
             self.pickup.draw(surface)
+        for bolt in self.bolts:
+            bolt.draw_trail(surface)                       # motion streaks first, under everything else
         for wall in self.walls:
             wall.draw(surface)
         for bolt in self.bolts:
@@ -379,7 +463,7 @@ class World:
             for laser in self.lasers:
                 laser.draw(self.fx_layer)
             surface.blit(self.fx_layer, (0, 0))
-        self.player.draw(surface)
+        self.player.draw(surface, show_path=show_path and not self.over)
         for effect in self.effects:
             effect.draw(surface)
         if self.time_warped:

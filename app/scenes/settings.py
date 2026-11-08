@@ -16,7 +16,7 @@ CARD_W, CARD_H = 780, 660
 PAD = 28
 ROW_H, ROW_GAP = 40, 8
 CONFIRM_TIME = 3.0          # s to click "Reset to defaults" a second time
-TABS = ("Controls", "Gameplay", "Audio", "Accessibility")
+TABS = ("Controls", "Gameplay", "Display", "Audio", "Accessibility")
 
 COLOR_MODE_LABELS = {"default": "Default", "deuteranopia": "Deuteranopia", "protanopia": "Protanopia",
                      "tritanopia": "Tritanopia", "high_contrast": "High contrast"}
@@ -76,7 +76,8 @@ class SettingsScene(Scene):
     def build_tab(self) -> None:
         """Create the rows of the open tab and a fresh focus group, focused on the tab itself."""
         size = (self.card.width - PAD * 2, ROW_H)
-        builders = (self.control_rows, self.gameplay_rows, self.audio_rows, self.accessibility_rows)
+        builders = (self.control_rows, self.gameplay_rows, self.display_rows, self.audio_rows,
+                    self.accessibility_rows)
         self.rows = builders[self.tab](size)
         for i, row in enumerate(self.rows):
             row.rect.topleft = (self.card.x + PAD, self.rows_top + i * (ROW_H + ROW_GAP))
@@ -109,6 +110,16 @@ class SettingsScene(Scene):
                       "Lasers warn you longer before they fire. " + ASSIST_NOTE),
         ]
 
+    def display_rows(self, size) -> list[Button]:
+        o = self.game.settings.options
+        return [
+            ToggleRow("Screen shake", self._toggle("screen_shake"), lambda: o["screen_shake"], size,
+                      "The arena shakes on blocked hits, Second Wind, Nova and the final hit. "
+                      "Always off with Reduced motion."),
+            ToggleRow("Movement path", self._toggle("show_path"), lambda: o["show_path"], size,
+                      "A dotted line from you to where you are walking."),
+        ]
+
     def audio_rows(self, size) -> list[Button]:
         o = self.game.settings.options
         return [
@@ -116,6 +127,10 @@ class SettingsScene(Scene):
                       "Everything at once. Left / Right to change; you hear the new level straight away."),
             VolumeRow("Sound effects", self._cycle("sfx_volume"), lambda: o["sfx_volume"], size,
                       "Skills, coins, threats and menus."),
+            VolumeRow("Music", self._cycle("music_volume"), lambda: o["music_volume"], size,
+                      "The soundtrack. It plays quieter while paused."),
+            ToggleRow("Adaptive music", self._toggle("adaptive_music"), lambda: o["adaptive_music"], size,
+                      "The music gains layers as danger rises. Off: one steady level during runs."),
             ToggleRow("Menu sounds", self._toggle("ui_sounds"), lambda: o["ui_sounds"], size,
                       "Soft clicks when you move around and choose things in menus."),
             ToggleRow("Laser audio cue", self._toggle("laser_audio_cue"), lambda: o["laser_audio_cue"], size,
