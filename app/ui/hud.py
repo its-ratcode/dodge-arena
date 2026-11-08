@@ -22,6 +22,7 @@ from app.render.shapes import (draw_bar, draw_cooldown_sweep, draw_glow, draw_pa
                                draw_progress_ring)
 from app.render.text import draw_keycap, draw_text
 from app.skills.loadout import SkillSlot
+from app.theme.accessibility import A11Y
 from app.theme.palette import PALETTE, danger_color
 from app.theme.styles import (HUD_BAR_PAD, HUD_BUFF_RADIUS, HUD_GROUP_GAP, HUD_KEYCAP_SPACE, HUD_MARGIN,
                               HUD_SLOT, HUD_SLOT_GAP, PANEL_STYLES)
@@ -68,8 +69,9 @@ class Hud:
         danger = world.danger
         color = danger_color(danger)
         if danger >= 1:
-            # At max danger the bar pulses between red and white.
-            color = lerp_color(PALETTE.danger, PALETTE.text, 0.3 + 0.3 * math.sin(world.survival_time * 7))
+            # At max danger the bar pulses between red and white (a steady mix with reduced flashing).
+            pulse = 0.0 if A11Y.reduce_flashing else math.sin(world.survival_time * 7)
+            color = lerp_color(PALETTE.danger, PALETTE.text, 0.3 + 0.3 * pulse)
         bar = pygame.Rect(0, 0, pill.width, 6)
         bar.midtop = (cx, pill.bottom + 8)
         draw_bar(surface, bar, danger, color)

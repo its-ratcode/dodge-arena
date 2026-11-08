@@ -2,6 +2,7 @@
 
 import pygame
 
+from app.theme.accessibility import A11Y
 from app.theme.palette import PALETTE
 from app.util.mathx import clamp, lerp_color
 
@@ -103,7 +104,7 @@ class ScrollView:
 
     def update(self, dt: float) -> None:
         self.offset += (self.target - self.offset) * min(1.0, dt * SCROLL_EASE)
-        if abs(self.target - self.offset) < 0.5:
+        if abs(self.target - self.offset) < 0.5 or A11Y.reduced_motion:     # jump instead of gliding
             self.offset = self.target
 
     def draw_scrollbar(self, surface: pygame.Surface) -> None:

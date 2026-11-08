@@ -21,6 +21,7 @@ class RunResult:
     picked_up: int
     bonus: int
     new_best: bool
+    counted: bool = True                # False when assists were on, so it couldn't set a best time
 
     @property
     def coins(self) -> int:
@@ -72,11 +73,13 @@ class Profile:
         return RunStats.from_levels(self.levels)
 
     # --- Runs ------------------------------------------------------------------------------
-    def record_run(self, seconds: float, picked_up: int) -> RunResult:
-        """Bank a finished run's coins and best time, then save."""
-        result = RunResult(seconds, picked_up, survival_bonus(seconds), new_best=seconds > self.best_time)
+    def record_run(self, seconds: float, picked_up: int, counts_for_best: bool = True) -> RunResult:
+        """Bank a finished run's coins (and its best time, if it counts), then save."""
+        new_best = counts_for_best and seconds > self.best_time
+        result = RunResult(seconds, picked_up, survival_bonus(seconds), new_best, counts_for_best)
         self.coins += result.coins
-        self.best_time = max(self.best_time, seconds)
+        if new_best:
+            self.best_time = seconds
         self.save()
         return result
 

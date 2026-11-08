@@ -88,12 +88,14 @@ class Button:
 
 # --- Settings rows ---------------------------------------------------------------------------
 class SettingRow(Button):
-    """A full-width row: a label on the left, its current value on the right."""
+    """A full-width row: a label on the left, its current value on the right.
+    ``desc`` is a sentence the settings screen shows while the row is focused."""
 
     def __init__(self, label: str, action: Callable[[], None], value: Callable[[], str],
-                 size: tuple[int, int]) -> None:
+                 size: tuple[int, int], desc: str = "") -> None:
         super().__init__(label, action, size=size)
         self.value = value
+        self.desc = desc
 
     def draw(self, surface: pygame.Surface) -> None:
         rect = self.draw_frame(surface)
@@ -104,12 +106,37 @@ class SettingRow(Button):
         draw_text(surface, f"<  {self.value()}  >", "small", PALETTE.text, midright=(rect.right - 16, rect.centery))
 
 
+class ChoiceRow(SettingRow):
+    """Steps through a list of values: activating goes forward, Left / Right step either way."""
+
+    def __init__(self, label: str, change: Callable[[int], None], value: Callable[[], str],
+                 size: tuple[int, int], desc: str = "") -> None:
+        super().__init__(label, lambda: change(1), value, size, desc)
+        self.change = change
+
+
+class ColorRow(ChoiceRow):
+    """A choice of color: shows a swatch of the color in use next to its name."""
+
+    def __init__(self, label: str, change: Callable[[int], None], value: Callable[[], str],
+                 color: Callable[[], Color], size: tuple[int, int], desc: str = "") -> None:
+        super().__init__(label, change, value, size, desc)
+        self.color = color
+
+    def draw_value(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+        text = draw_text(surface, f"<  {self.value()}  >", "small", PALETTE.text,
+                         midright=(rect.right - 16, rect.centery))
+        swatch = (text.left - 14, rect.centery)
+        pygame.draw.circle(surface, self.color(), swatch, 8)
+        pygame.draw.circle(surface, PALETTE.text_dim, swatch, 8, 1)
+
+
 class KeyBindRow(SettingRow):
     """Shows the bound key as a keycap, or a prompt while waiting for a new key."""
 
     def __init__(self, label: str, action: Callable[[], None], key_name: Callable[[], str],
-                 waiting: Callable[[], bool], size: tuple[int, int]) -> None:
-        super().__init__(label, action, key_name, size)
+                 waiting: Callable[[], bool], size: tuple[int, int], desc: str = "") -> None:
+        super().__init__(label, action, key_name, size, desc)
         self.waiting = waiting
 
     def draw_value(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
@@ -124,8 +151,8 @@ class ToggleRow(SettingRow):
     """An on/off switch."""
 
     def __init__(self, label: str, action: Callable[[], None], is_on: Callable[[], bool],
-                 size: tuple[int, int]) -> None:
-        super().__init__(label, action, lambda: "On" if is_on() else "Off", size)
+                 size: tuple[int, int], desc: str = "") -> None:
+        super().__init__(label, action, lambda: "On" if is_on() else "Off", size, desc)
         self.is_on = is_on
 
     def draw_value(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
@@ -135,6 +162,26 @@ class ToggleRow(SettingRow):
         pygame.draw.rect(surface, PALETTE.accent if on else PALETTE.track, track, border_radius=11)
         knob_x = track.right - 11 if on else track.left + 11
         pygame.draw.circle(surface, PALETTE.text if on else PALETTE.text_dim, (knob_x, track.centery), 8)
+
+
+class TabButton(Button):
+    """A tab: plain text with an accent underline when it is the open tab."""
+
+    def __init__(self, label: str, action: Callable[[], None], is_open: Callable[[], bool],
+                 size: tuple[int, int]) -> None:
+        super().__init__(label, action, size=size)
+        self.is_open = is_open
+
+    def draw(self, surface: pygame.Surface) -> None:
+        open_ = self.is_open()
+        if self.highlight > 0:
+            draw_glow(surface, PALETTE.accent, self.rect.center, self.rect.width * 0.4, int(40 * self.highlight))
+        color = PALETTE.text if open_ else lerp_color(PALETTE.text_dim, PALETTE.text, self.highlight)
+        draw_text(surface, self.label, "button", color, shadow=True, center=self.rect.center)
+        if open_:
+            line = pygame.Rect(0, 0, self.rect.width - 24, 3)
+            line.midbottom = self.rect.midbottom
+            pygame.draw.rect(surface, PALETTE.accent, line, border_radius=2)
 
 
 # --- Groups ---------------------------------------------------------------------------------

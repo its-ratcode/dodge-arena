@@ -8,6 +8,7 @@ from pygame.math import Vector2
 from app import config
 from app.render.icons import draw_icon
 from app.render.shapes import draw_glow
+from app.theme.accessibility import blink_hidden, wobble
 from app.theme.palette import PALETTE
 
 
@@ -39,9 +40,9 @@ class Coin:
         return self.pos.distance_squared_to(pos) <= (self.radius + radius) ** 2
 
     def draw(self, surface: pygame.Surface) -> None:
-        if self.remaining < config.COIN_BLINK_TIME and int(self.remaining * 10) % 2 == 0:
+        if self.remaining < config.COIN_BLINK_TIME and blink_hidden(self.remaining, 10):
             return                                          # blinking: skip every other tenth
-        bob = Vector2(0, math.sin(self.age * 4) * 2)      # a gentle float up and down
+        bob = Vector2(0, wobble(math.sin(self.age * 4) * 2))      # a gentle float up and down
         draw_glow(surface, PALETTE.coin, self.pos, self.radius * 3, 120)
         draw_icon(surface, "coin", self.pos + bob, self.radius * 2.4, PALETTE.coin)
         if self.big:

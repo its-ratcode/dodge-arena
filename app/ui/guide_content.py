@@ -130,6 +130,20 @@ def build_guide(settings: Settings) -> list[Section]:
                          ("RECHARGE", f"{sec(config.SECOND_WIND_COOLDOWN)} "
                                       f"(-{sec(UPGRADE_BY_ID['second_wind'].step)} per extra level)")]),
         ]),
+        Section("Accessibility", [
+            Paragraph("Settings > Accessibility changes how the game looks, and Settings > Gameplay how it "
+                      "plays. Everything is saved right away."),
+            Bullets([
+                "Color modes for deuteranopia, protanopia and tritanopia, plus High contrast. You can also "
+                "pick your own color for yourself, bolts and lasers.",
+                "Threat outlines draw a bright edge around every bolt and laser.",
+                "Reduce flashing stops all blinking and pulsing. Reduced motion stops floating, wobbling, "
+                "spinning, sliding and smooth scrolling.",
+                "Game speed (down to 50%) and longer laser warnings (up to 200%) make runs easier to learn. "
+                "Runs with these assists still earn coins, but don't set best times.",
+                "Starting danger lets you practise the fast part of a run straight away.",
+            ]),
+        ]),
         Section("Tips", [
             Bullets([
                 "Keep moving in short steps. Bolts are aimed at where you were, not where you are going.",

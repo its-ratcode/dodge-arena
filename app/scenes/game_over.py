@@ -6,6 +6,7 @@ from app.entities.laser import Laser
 from app.render.icons import draw_icon
 from app.render.text import draw_text, text_size
 from app.scenes.base import Scene, card_rect, dim, draw_card, ease_out
+from app.theme.accessibility import wobble
 from app.theme.palette import PALETTE
 from app.theme.styles import BUTTON_GAP, BUTTON_HEIGHT, CARD_PAD
 from app.ui.widgets import Button, ButtonList
@@ -35,7 +36,8 @@ class GameOverScene(Scene):
         return ease_out((self.age - CARD_DELAY) / CARD_SLIDE)
 
     def card(self) -> pygame.Rect:
-        return card_rect(*CARD_SIZE, offset_y=round(30 * (1 - self.shown)))
+        slide = wobble(30 * (1 - self.shown))             # with reduced motion it only fades in
+        return card_rect(*CARD_SIZE, offset_y=round(slide))
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if self.shown >= 1:
@@ -67,6 +69,9 @@ class GameOverScene(Scene):
         draw_text(surface, fmt_time(world.survival_time), "stat", PALETTE.text, shadow=True, midtop=(cx, y + 80))
         if result.new_best:
             draw_text(surface, "NEW BEST TIME!", "label", PALETTE.warning, shadow=True, midtop=(cx, y + 124))
+        elif not result.counted:
+            draw_text(surface, "ASSISTS ON: NOT COUNTED FOR BEST TIME", "label", PALETTE.text_faint,
+                      midtop=(cx, y + 124))
         else:
             draw_text(surface, f"BEST {fmt_time(profile.best_time)}", "label", PALETTE.text_faint,
                       midtop=(cx, y + 124))

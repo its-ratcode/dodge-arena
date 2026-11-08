@@ -1,10 +1,11 @@
 """The color palette.
 
 All colors live on one shared ``PALETTE`` object that the drawing code reads
-at draw time, so changing a color here changes it everywhere.
+at draw time, so changing a color here changes it everywhere, and
+``apply_colors`` can recolor the whole game while it runs (color modes).
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 from app.util.mathx import Color, lerp_color
 
@@ -73,6 +74,58 @@ class Palette:
 
 
 PALETTE = Palette()
+DEFAULT_PALETTE = Palette()             # untouched copy, to reset from
+
+# --- Color modes -------------------------------------------------------------------------
+# Each mode overrides some colors (based on the color-blind-safe Okabe-Ito palette).
+# Lighter and darker shades (player_light, bolt_core ...) are derived automatically.
+COLOR_MODES: dict[str, dict[str, Color]] = {
+    "default": {},
+    "deuteranopia": {"player": (86, 180, 233), "bolt": (230, 159, 0), "laser": (240, 228, 66),
+                     "marker": (235, 235, 235), "danger": (230, 120, 0)},
+    "protanopia": {"player": (86, 180, 233), "bolt": (245, 175, 40), "laser": (240, 228, 66),
+                   "marker": (235, 235, 235), "danger": (245, 150, 40)},
+    "tritanopia": {"player": (40, 210, 200), "bolt": (235, 50, 60), "laser": (240, 240, 250),
+                   "coin": (255, 150, 60), "shield": (150, 230, 230), "marker": (240, 240, 240),
+                   "danger": (235, 50, 60), "sprint": (255, 150, 60)},
+    "high_contrast": {"arena_center": (8, 9, 12), "arena_edge": (0, 0, 0), "player": (0, 230, 255),
+                      "bolt": (255, 45, 45), "laser": (255, 255, 0), "coin": (255, 215, 0),
+                      "wall": (190, 140, 255), "marker": (255, 255, 255), "shield": (120, 220, 255)},
+}
+
+# Colors a player can pick for the three most important things on screen.
+SWATCHES: dict[str, Color | None] = {
+    "Auto": None,                       # follow the color mode
+    "Blue": (70, 170, 255), "Cyan": (40, 220, 230), "Green": (80, 220, 120), "Yellow": (245, 225, 70),
+    "Orange": (240, 150, 40), "Red": (230, 60, 70), "Pink": (255, 110, 196), "Purple": (160, 110, 250),
+    "White": (240, 240, 245),
+}
+
+WHITE = (255, 255, 255)
+# (base color, shade, how far toward white). A shade is re-derived only when its base changed,
+# so the hand-tuned default shades stay exactly as they are.
+DERIVED_SHADES = (("player", "player_light", 0.45), ("player", "player_outline", 0.75),
+                  ("bolt", "bolt_core", 0.45), ("bolt", "bolt_front", 0.82), ("laser", "laser_core", 0.9),
+                  ("wall", "wall_outline", 0.7), ("coin", "coin_shine", 0.75))
+
+
+def apply_colors(mode: str, custom: dict[str, str]) -> None:
+    """Reset the palette, apply a color mode, then the player's own picks.
+
+    ``custom`` maps a palette field ("player", "bolt", "laser") to a swatch name.
+    """
+    for f in fields(Palette):
+        setattr(PALETTE, f.name, getattr(DEFAULT_PALETTE, f.name))
+    for name, color in COLOR_MODES.get(mode, {}).items():
+        setattr(PALETTE, name, color)
+    for name, swatch in custom.items():
+        if SWATCHES.get(swatch):
+            setattr(PALETTE, name, SWATCHES[swatch])
+    for base, shade, toward_white in DERIVED_SHADES:
+        if getattr(PALETTE, base) != getattr(DEFAULT_PALETTE, base):
+            setattr(PALETTE, shade, lerp_color(getattr(PALETTE, base), WHITE, toward_white))
+    if PALETTE.coin != DEFAULT_PALETTE.coin:
+        PALETTE.coin_dark = tuple(int(c * 0.66) for c in PALETTE.coin)
 
 
 def danger_color(level: float) -> Color:

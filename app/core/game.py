@@ -5,7 +5,7 @@ import pygame
 from app import config
 from app.core.settings import Settings
 from app.core.storage import SaveFile
-from app.core.world import World
+from app.core.world import RunRules, World
 from app.meta import APP_NAME
 from app.progression.profile import Profile, RunResult
 from app.render.arena import build_arena_background
@@ -17,7 +17,8 @@ from app.scenes.pause import PauseScene
 from app.scenes.play import PlayScene
 from app.scenes.settings import SettingsScene
 from app.scenes.shop import ShopScene
-from app.theme.palette import PALETTE
+from app.theme.accessibility import A11Y
+from app.theme.palette import PALETTE, apply_colors
 from app.ui.hud import Hud
 
 
@@ -37,20 +38,35 @@ class Game:
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption(APP_NAME)
         self.clock = pygame.time.Clock()
-        self.background = build_arena_background(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
         self.hud = Hud()
         save_file = SaveFile(save_path)
         self.profile = Profile(save_file)
         self.settings = Settings(save_file)
+        self.apply_settings()                       # colors first: the background is drawn with them
+        self.settings.on_change = self.apply_settings
         self.world = self.new_world()
         self.result: RunResult | None = None        # what the last banked run was worth
         self.in_run = False                         # a run has started and is not banked yet
         self.scene: Scene = MainMenuScene(self)
         self.running = True
 
+    def apply_settings(self) -> None:
+        """Push the display settings into the palette and the accessibility flags (after every change)."""
+        o = self.settings.options
+        apply_colors(o["color_mode"], {"player": o["color_player"], "bolt": o["color_bolt"],
+                                       "laser": o["color_laser"]})
+        A11Y.outlines = o["threat_outlines"] or o["color_mode"] == "high_contrast"
+        A11Y.reduce_flashing = o["reduce_flashing"]
+        A11Y.reduced_motion = o["reduced_motion"]
+        self.background = build_arena_background(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+
     def new_world(self) -> World:
-        """A run with the stats the current upgrades give and the player's key bindings."""
-        return World(self.profile.stats(), self.settings.keybinds)
+        """A run with the stats the current upgrades give, the player's key bindings and
+        gameplay settings. Gameplay settings are fixed for the run once it starts."""
+        o = self.settings.options
+        rules = RunRules(start_danger=o["start_danger"] / 100, game_speed=o["game_speed"] / 100,
+                         laser_warning=o["laser_warning"] / 100)
+        return World(self.profile.stats(), self.settings.keybinds, rules)
 
     # --- Navigation (called by scenes) --------------------------------------------------------
     def start_run(self) -> None:
@@ -91,7 +107,8 @@ class Game:
         """Add the current run's coins and time to the profile (saves the file). Safe to call twice."""
         if self.in_run:
             self.in_run = False
-            self.result = self.profile.record_run(self.world.survival_time, self.world.coins_picked)
+            self.result = self.profile.record_run(self.world.survival_time, self.world.coins_picked,
+                                                  self.world.rules.counts_for_best)
 
     # --- Main loop ----------------------------------------------------------------------
     def run(self) -> None:

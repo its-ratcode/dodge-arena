@@ -4,6 +4,7 @@ import pygame
 from pygame.math import Vector2
 
 from app import config
+from app.theme.accessibility import A11Y, blink_hidden
 from app.theme.palette import PALETTE
 from app.util.geometry import RotatedRect
 from app.util.mathx import clamp
@@ -47,16 +48,20 @@ class Laser:
         if self.age < self.warning_time:
             # Warning: an outlined lane plus a strip that widens until the beam fires.
             p = self.age / self.warning_time
-            flicker = 20 if int(self.age * 20) % 2 == 0 else 0
+            flicker = 0 if blink_hidden(self.age, 20) else 20
             pygame.draw.polygon(layer, (*PALETTE.laser, 25 + int(35 * p)), self.band(config.LASER_WIDTH))
             pygame.draw.polygon(layer, (*PALETTE.laser, 150 + flicker), self.band(config.LASER_WIDTH), 2)
             pygame.draw.polygon(layer, (*PALETTE.laser, 60 + int(120 * p)),
                                 self.band(max(2.0, config.LASER_WIDTH * p)))
+            if A11Y.outlines:
+                pygame.draw.polygon(layer, (*PALETTE.text, 230), self.band(config.LASER_WIDTH + 4), 2)
         elif self.firing:
             # Firing: wide glow, colored body, white-hot core.
             pygame.draw.polygon(layer, (*PALETTE.laser, 90), self.band(config.LASER_WIDTH * 1.5))
             pygame.draw.polygon(layer, (*PALETTE.laser, 220), self.band(config.LASER_WIDTH))
             pygame.draw.polygon(layer, (*PALETTE.laser_core, 255), self.band(config.LASER_WIDTH * 0.35))
+            if A11Y.outlines:
+                pygame.draw.polygon(layer, (*PALETTE.text, 255), self.band(config.LASER_WIDTH + 4), 3)
         else:
             # Fade-out. Clamped: a laser may age past its end before it is removed.
             f = clamp(1 - (self.age - self.warning_time - config.LASER_ACTIVE_TIME) / config.LASER_FADE_TIME,

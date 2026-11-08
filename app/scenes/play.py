@@ -32,7 +32,7 @@ class PlayScene(Scene):
         # Holding the move button keeps updating the destination.
         if pygame.mouse.get_pressed()[self.game.settings.move_button - 1]:
             world.command_move(pygame.mouse.get_pos(), new_click=False)
-        world.update(dt)
+        world.update(dt * world.rules.game_speed)          # the Game speed assist slows the whole run
         if world.over:
             self.game.end_run()
 

@@ -71,6 +71,17 @@ Progress and settings are saved to `save.json` in your user data folder. Delete 
 | macOS | `~/Library/Application Support/Dodge Arena` |
 | Linux | `~/.local/share/Dodge Arena` (or `$XDG_DATA_HOME/Dodge Arena`) |
 
+## Accessibility
+
+Everything is in **Settings** and saved right away:
+
+| Tab | Options |
+|---|---|
+| Accessibility | Color modes (Deuteranopia, Protanopia, Tritanopia, High contrast), your own color for the player, bolts and lasers, threat outlines, reduce flashing, reduced motion |
+| Gameplay | Game speed (50-100%), laser warning time (100-200%), starting danger, pause on focus loss, frame rate |
+
+Runs with a slower game speed or longer laser warnings still earn coins but don't set best times.
+
 ## Getting started
 
 Requires Python 3.10+.

@@ -7,6 +7,7 @@ from pygame.math import Vector2
 
 from app import config
 from app.render.shapes import draw_alpha_circle, draw_glow
+from app.theme.accessibility import wobble
 from app.theme.palette import PALETTE
 from app.util.mathx import Color, clamp
 
@@ -171,7 +172,7 @@ class Player:
             k = (i + 1) / count                       # older = smaller and fainter
             draw_alpha_circle(surface, color, point, self.radius * (0.4 + 0.6 * k), 80 * k)
         if self.sprinting:
-            r = self.radius + 7 + math.sin(self.age * 18) * 2.5
+            r = self.radius + 7 + wobble(math.sin(self.age * 18) * 2.5)
             draw_alpha_circle(surface, PALETTE.sprint, self.pos, r, 50)
             draw_alpha_circle(surface, PALETTE.sprint, self.pos, r, 220, width=2)
         body, light, outline = PALETTE.player, PALETTE.player_light, PALETTE.player_outline
@@ -182,7 +183,7 @@ class Player:
         elif self.invulnerable_remaining > 0:
             # Saved by Second Wind: a pulsing golden ring while untouchable.
             outline = PALETTE.second_wind
-            r = self.radius + 8 + math.sin(self.age * 14) * 2
+            r = self.radius + 8 + wobble(math.sin(self.age * 14) * 2)
             draw_alpha_circle(surface, PALETTE.second_wind, self.pos, r, 210, width=2)
         draw_glow(surface, body, self.pos, self.radius * 3, 110)
         pygame.draw.circle(surface, body, self.pos, self.radius)

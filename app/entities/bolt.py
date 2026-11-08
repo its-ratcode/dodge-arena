@@ -5,6 +5,7 @@ from pygame.math import Vector2
 
 from app import config
 from app.render.shapes import draw_glow
+from app.theme.accessibility import A11Y
 from app.theme.palette import PALETTE
 from app.util.geometry import RotatedRect
 
@@ -43,3 +44,7 @@ class Bolt:
         pygame.draw.polygon(surface, PALETTE.bolt_core, core)
         pygame.draw.polygon(surface, PALETTE.text if highlight else PALETTE.bolt_core, corners, 2)
         pygame.draw.line(surface, PALETTE.bolt_front, corners[0], corners[1], 4)
+        if A11Y.outlines:
+            # A bright outline a little outside the body, so bolts stand out from any background.
+            outline = RotatedRect(s.center, s.direction, s.length + 6, s.width + 6).corners()
+            pygame.draw.polygon(surface, PALETTE.text, outline, 2)

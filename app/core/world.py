@@ -1,6 +1,7 @@
 """The World: everything that belongs to one run."""
 
 import random
+from dataclasses import dataclass
 
 import pygame
 from pygame.math import Vector2
@@ -23,16 +24,32 @@ from app.theme.palette import PALETTE
 Threat = Bolt | Laser
 
 
+@dataclass(frozen=True)
+class RunRules:
+    """Optional changes to how a run plays (from the Gameplay settings)."""
+
+    start_danger: float = 0.0           # 0..1: danger the run starts at
+    game_speed: float = 1.0             # 0.5..1: the whole run runs this much slower (applied by the play scene)
+    laser_warning: float = 1.0          # 1..2: lasers warn this many times longer
+
+    @property
+    def counts_for_best(self) -> bool:
+        """Slower runs and longer warnings are easier, so they never set a best time."""
+        return self.game_speed == 1.0 and self.laser_warning == 1.0
+
+
 class World:
     """One run: the player, the threats, the pickups, the survival clock and the spawn timers.
 
     A new run is simply a new World. ``stats`` holds the upgrade-dependent
-    numbers for the run. ``killer`` is set to whatever hit the player, which
-    ends the run.
+    numbers for the run and ``rules`` the player's gameplay settings. ``killer``
+    is set to whatever hit the player, which ends the run.
     """
 
-    def __init__(self, stats: RunStats | None = None, keybinds: dict[str, str] | None = None) -> None:
+    def __init__(self, stats: RunStats | None = None, keybinds: dict[str, str] | None = None,
+                 rules: RunRules | None = None) -> None:
         self.stats = stats or RunStats()
+        self.rules = rules or RunRules()
         keybinds = keybinds if keybinds is not None else dict(config.DEFAULT_KEYBINDS)
         self.player = Player((config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2), self.stats.player_speed)
         self.loadout = build_loadout(keybinds, self.stats.cooldown_mult)
@@ -68,7 +85,8 @@ class World:
 
     @property
     def danger(self) -> float:
-        return danger_level(self.survival_time)
+        """0..1. A higher starting danger shifts the whole ramp forward."""
+        return danger_level(self.survival_time + self.rules.start_danger * config.DANGER_RAMP_TIME)
 
     @property
     def time_warped(self) -> bool:
@@ -301,7 +319,7 @@ class World:
     def spawn_laser(self) -> None:
         """Aim a beam through the player's current position from a random angle."""
         origin = self.player.pos + Vector2(1, 0).rotate(random.uniform(0, 360)) * 100
-        warning = ramp(config.LASER_WARNING_START, config.LASER_WARNING_END, self.danger)
+        warning = ramp(config.LASER_WARNING_START, config.LASER_WARNING_END, self.danger) * self.rules.laser_warning
         self.lasers.append(Laser(origin, self.player.pos, warning))
 
     # --- Drawing -------------------------------------------------------------------------------

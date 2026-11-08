@@ -12,6 +12,7 @@ from app import config
 from app.render.icons import draw_icon
 from app.render.shapes import draw_glow, draw_progress_ring
 from app.render.text import draw_text
+from app.theme.accessibility import A11Y, blink_hidden, wobble
 from app.theme.palette import PALETTE
 
 if TYPE_CHECKING:
@@ -39,14 +40,15 @@ class PowerUpPickup:
         return self.pos.distance_squared_to(pos) <= (config.POWERUP_RADIUS + radius) ** 2
 
     def draw(self, surface: pygame.Surface) -> None:
-        if self.remaining < config.POWERUP_BLINK_TIME and int(self.remaining * 10) % 2 == 0:
+        if self.remaining < config.POWERUP_BLINK_TIME and blink_hidden(self.remaining, 10):
             return                                          # blinking: about to vanish
         color = self.kind.color_of()
-        c = self.pos + Vector2(0, math.sin(self.age * 3) * 3)
+        c = self.pos + Vector2(0, wobble(math.sin(self.age * 3) * 3))
         r = config.POWERUP_RADIUS
         draw_glow(surface, color, c, r * 3, 150)
-        # A slowly spinning diamond with the icon inside.
-        diamond = [c + Vector2(r + 3, 0).rotate(self.age * 70 + k * 90) for k in range(4)]
+        # A slowly spinning diamond with the icon inside (standing still with reduced motion).
+        spin = 45 if A11Y.reduced_motion else self.age * 70
+        diamond = [c + Vector2(r + 3, 0).rotate(spin + k * 90) for k in range(4)]
         pygame.draw.polygon(surface, PALETTE.panel_bottom, diamond)
         pygame.draw.polygon(surface, color, diamond, 3)
         draw_icon(surface, self.kind.icon, c, 16, color)

@@ -13,6 +13,7 @@ from app.render.icons import draw_icon
 from app.render.shapes import draw_glow, draw_panel
 from app.render.text import draw_text, text_size
 from app.scenes.base import Scene, dim
+from app.theme.accessibility import A11Y
 from app.theme.palette import PALETTE
 from app.ui.widgets import Button, ButtonList
 from app.util.keys import key_label
@@ -53,7 +54,9 @@ class MainMenuScene(Scene):
         self.age += dt
         self.buttons.update(dt)
         self.bolt_timer -= dt
-        if self.bolt_timer <= 0:
+        if A11Y.reduced_motion:
+            self.bolts.clear()                         # no decorative movement behind the menu
+        elif self.bolt_timer <= 0:
             self.bolt_timer += DEMO_BOLT_INTERVAL
             self.bolts.append(self.demo_bolt())
         for bolt in self.bolts:

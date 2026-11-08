@@ -3,6 +3,7 @@
 import pygame
 
 from app import config
+from app.theme.accessibility import blink_hidden
 from app.theme.palette import PALETTE
 from app.util.geometry import RotatedRect
 from app.util.mathx import clamp, lerp_color
@@ -28,7 +29,7 @@ class Wall:
         s = self.shape
         color, outline = PALETTE.wall, PALETTE.wall_outline
         # Blink just before vanishing so it never disappears by surprise.
-        if self.remaining < config.WALL_BLINK_TIME and int(self.remaining * 14) % 2 == 0:
+        if self.remaining < config.WALL_BLINK_TIME and blink_hidden(self.remaining, 14):
             color = lerp_color(color, PALETTE.arena_center, 0.6)
             outline = lerp_color(outline, PALETTE.arena_center, 0.6)
         aura = RotatedRect(s.center, s.direction, s.length + 12, s.width + 14).corners()
