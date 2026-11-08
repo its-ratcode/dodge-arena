@@ -392,11 +392,15 @@ class World:
                 if self.player_hit(bolt):
                     return
                 self.bolts.remove(bolt)                      # blocked: the bolt is destroyed
+                if p.invulnerable:
+                    return                                   # Second Wind: untouchable at once, even this frame
         for laser in self.lasers:
             if laser.deadly and laser.shape.collides_circle(p.pos, p.hit_radius):
                 if self.player_hit(laser):
                     return
                 laser.disarmed = True                        # blocked: it can't hit again
+                if p.invulnerable:
+                    return
 
     def player_hit(self, source: Threat) -> bool:
         """Resolve a hit. Returns True if it ended the run, False if something saved the player.

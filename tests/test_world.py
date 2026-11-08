@@ -45,6 +45,13 @@ def test_second_wind_saves_you_once_then_recharges():
     assert world.over, "only one save until it recharges"
 
 
+def test_second_wind_also_covers_hits_in_the_same_moment():
+    world = calm(World(RunStats.from_levels({"second_wind": 1})))
+    world.bolts += [bolt_at(world.player.pos), bolt_at(world.player.pos, direction=(0, 1))]   # two at once
+    step(world, 1 / 60)
+    assert not world.over, "a save makes you untouchable at once, not from the next frame"
+
+
 def test_a_wall_destroys_bolts_coming_at_you(world):
     p = Vector2(world.player.pos)
     world.cast(1, p + (100, 0))                                     # a wall on the right
