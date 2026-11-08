@@ -150,16 +150,22 @@ def build_guide(settings: Settings) -> list[Section]:
                 "danger rises) and a rising whine just before it fires.",
             ]),
         ]),
-        Section("Tips", [
-            Bullets([
-                "Keep moving in short steps. Bolts are aimed at where you were, not where you are going.",
-                "When a laser lane lights up, step out sideways rather than running along it.",
-                f"Save Blink ({key['blink']}) for the hit you can't dodge any other way.",
-                "A Wall between you and a busy edge buys you a few seconds of calm.",
-                "Coin Rush plus Coin Magnet is the fastest way to afford upgrades.",
-                "Sell upgrades any time to try a new build: refunds are always full.",
-            ]),
-        ]),
+        Section("Tips", [Bullets(tips(settings))]),
+    ]
+
+
+def tips(settings: Settings) -> list[str]:
+    """Short pieces of advice: all of them in the guide, a random one on the main menu."""
+    blink = key_label(settings.keybinds["blink"])
+    return [
+        "Keep moving in short steps. Bolts are aimed at where you were, not where you are going.",
+        "When a laser lane lights up, step out sideways rather than running along it.",
+        f"Save Blink ({blink}) for the hit you can't dodge any other way.",
+        "A Wall between you and a busy edge buys you a few seconds of calm.",
+        "Coin Rush plus Coin Magnet is the fastest way to afford upgrades.",
+        "Sell upgrades any time to try a new build: refunds are always full.",
+        "Let bolts pass close: every close call is worth a coin.",
+        "Stay near the middle. Corners trap you and cut Blink short.",
     ]
 
 

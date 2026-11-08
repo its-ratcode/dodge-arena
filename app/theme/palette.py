@@ -68,6 +68,7 @@ class Palette:
     text_dim: Color = (162, 174, 196)
     text_faint: Color = (106, 118, 142)
     accent: Color = (64, 206, 226)           # low danger
+    success: Color = (88, 218, 148)          # maxed upgrades, the next level's value
     warning: Color = (250, 196, 80)          # medium danger
     danger: Color = (236, 76, 88)            # high danger, game over
     track: Color = (36, 45, 64)              # empty part of progress bars

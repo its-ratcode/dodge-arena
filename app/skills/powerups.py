@@ -24,6 +24,7 @@ class PowerUp(Skill):
 
     cooldown = 0.0
     color_name = "text"                 # palette field, so the pickup can show it before one exists
+    summary = ""                        # one line for the held power-up card in the HUD
 
     @classmethod
     def color_of(cls) -> Color:
@@ -44,6 +45,7 @@ class Stasis(PowerUp):
     name = "Stasis"
     icon = "stasis"
     color_name = "stasis"
+    summary = "Frozen, but untouchable."
 
     def cast(self, world: World, target: Vector2) -> None:
         world.player.enter_stasis(config.STASIS_DURATION)
@@ -55,6 +57,7 @@ class TimeWarp(PowerUp):
     name = "Time Warp"
     icon = "time_warp"
     color_name = "time_warp"
+    summary = "Threats slow down. You don't."
 
     def cast(self, world: World, target: Vector2) -> None:
         world.time_warp_remaining = config.TIME_WARP_DURATION
@@ -66,6 +69,7 @@ class Warp(PowerUp):
     name = "Warp"
     icon = "warp"
     color_name = "warp"
+    summary = "A long Blink to the cursor."
 
     def cast(self, world: World, target: Vector2) -> None:
         world.blink_toward(target, config.WARP_RANGE)
@@ -77,6 +81,7 @@ class Nova(PowerUp):
     name = "Nova"
     icon = "nova"
     color_name = "nova"
+    summary = "Clears every bolt and laser."
 
     def cast(self, world: World, target: Vector2) -> None:
         world.nova()
@@ -88,6 +93,7 @@ class CoinRush(PowerUp):
     name = "Coin Rush"
     icon = "coin_rush"
     color_name = "coin"
+    summary = "More coins, worth double."
 
     def cast(self, world: World, target: Vector2) -> None:
         world.coin_rush_remaining = config.COIN_RUSH_DURATION

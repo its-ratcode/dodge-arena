@@ -1,4 +1,4 @@
-"""The main menu: title, your records, and the way into a run."""
+"""The main menu: title and buttons on the left, your profile on the right."""
 
 import random
 
@@ -6,21 +6,24 @@ import pygame
 from pygame.math import Vector2
 
 from app import config
-from app.core.settings import MOVE_BUTTONS
 from app.entities.bolt import Bolt
 from app.meta import APP_NAME, VERSION
+from app.progression.upgrades import UPGRADES, second_wind_cooldown
 from app.render.icons import draw_icon
 from app.render.shapes import draw_glow, draw_panel
-from app.render.text import draw_text, text_size
+from app.render.text import draw_hint_row, draw_text, line_height, wrap_text
 from app.scenes.base import Scene, dim
 from app.theme.accessibility import A11Y
 from app.theme.palette import PALETTE
+from app.theme.styles import BUTTON_WIDTH
+from app.ui.guide_content import tips
 from app.ui.widgets import Button, ButtonList
-from app.util.keys import key_label
 from app.util.timefmt import fmt_time
 
 DEMO_BOLT_INTERVAL = 0.45      # s between decorative bolts crossing the background
 DEMO_BOLT_SPEED = 260          # px/s
+LEFT = 96                      # px; the left column (title, buttons, hints)
+CARD = pygame.Rect(config.SCREEN_WIDTH - 96 - 380, 200, 380, 350)     # the profile card
 
 
 class MainMenuScene(Scene):
@@ -31,21 +34,14 @@ class MainMenuScene(Scene):
         self.age = 0.0
         self.bolts: list[Bolt] = []
         self.bolt_timer = 0.0
+        self.tip = random.choice(tips(game.settings))
         self.buttons = ButtonList([
-            Button("Play", game.start_run, primary=True),
-            Button("How to play", game.open_guide, hotkey="h"),
-            Button("Shop", game.open_shop, hotkey="s"),
-            Button("Settings", game.open_settings),
-            Button("Quit", game.quit, hotkey="escape"),
-        ], center=(config.SCREEN_WIDTH // 2, 480))
-
-    def controls_hint(self) -> str:
-        """The controls line at the bottom, built from the player's current bindings."""
-        s = self.game.settings
-        keys = {action: key_label(name) for action, name in s.keybinds.items()}
-        return (f"{MOVE_BUTTONS[s.move_button]} move   |   {keys['shield']} {keys['wall']} {keys['dash']} abilities"
-                f"   |   {keys['sprint']} {keys['blink']} utility spells   |   {keys['powerup']} power-up"
-                f"   |   {keys['pause']} pause")
+            Button("Play", game.start_run, primary=True, icon="play"),
+            Button("How to play", game.open_guide, hotkey="h", icon="book"),
+            Button("Shop", game.open_shop, hotkey="s", icon="coin"),
+            Button("Settings", game.open_settings, icon="gear"),
+            Button("Quit", game.quit, hotkey="escape", icon="exit"),
+        ], center=(LEFT + BUTTON_WIDTH // 2, 474))
 
     def handle_event(self, event: pygame.event.Event) -> None:
         self.buttons.handle_event(event)
@@ -78,33 +74,45 @@ class MainMenuScene(Scene):
         for bolt in self.bolts:
             bolt.draw(surface)
         dim(surface, 140)
-        cx = config.SCREEN_WIDTH // 2
 
-        draw_glow(surface, PALETTE.accent, (cx, 145), 260, 45)
-        draw_text(surface, APP_NAME.upper(), "title", PALETTE.text, shadow=True, center=(cx, 140))
-        draw_text(surface, "Dodge the bolts. Outlast the lasers. Survive.", "subtitle", PALETTE.text_dim,
-                  center=(cx, 198))
-        self.draw_records(surface, cx, 250)
+        draw_glow(surface, PALETTE.accent, (LEFT + 150, 160), 230, 40)
+        title = draw_text(surface, APP_NAME.upper(), "title", PALETTE.text, shadow=True, topleft=(LEFT, 112))
+        pygame.draw.rect(surface, PALETTE.accent, (LEFT + 4, title.bottom + 6, 64, 3), border_radius=2)
+        draw_text(surface, "Dodge the bolts. Outlast the lasers. Survive.", "small", PALETTE.text_dim,
+                  topleft=(LEFT + 4, title.bottom + 18))
         self.buttons.draw(surface)
+        self.draw_profile(surface)
 
-        draw_text(surface, self.controls_hint(), "small", PALETTE.text_faint, midbottom=(cx, config.SCREEN_HEIGHT - 20))
+        draw_hint_row(surface, [(["ARROWS"], "Navigate"), (["ENTER"], "Select"), (["ESC"], "Quit")],
+                      LEFT, config.SCREEN_HEIGHT - 44)
         draw_text(surface, f"v{VERSION}", "tiny", PALETTE.text_faint,
-                  bottomright=(config.SCREEN_WIDTH - 14, config.SCREEN_HEIGHT - 20))
+                  bottomright=(config.SCREEN_WIDTH - 24, config.SCREEN_HEIGHT - 20))
 
-    def draw_records(self, surface: pygame.Surface, cx: int, y: int) -> None:
-        """Two chips: best time and coins."""
+    def draw_profile(self, surface: pygame.Surface) -> None:
+        """Coins, best time, upgrades owned, Second Wind, and a tip."""
         profile = self.game.profile
-        best = fmt_time(profile.best_time) if profile.best_time > 0 else "--"
-        for i, (label, value, color) in enumerate((("BEST TIME", best, PALETTE.text),
-                                                   ("COINS", str(profile.coins), PALETTE.coin))):
-            chip = pygame.Rect(0, 0, 170, 62)
-            chip.center = (cx + (i * 2 - 1) * 95, y + 31)
-            draw_panel(surface, chip, "chip")
-            draw_text(surface, label, "label", PALETTE.text_faint, midtop=(chip.centerx, chip.top + 9))
-            if label == "COINS":
-                width = 24 + text_size(value, "cooldown")[0]
-                left = chip.centerx - width // 2
-                draw_icon(surface, "coin", (left + 9, chip.top + 40), 18, PALETTE.coin)
-                draw_text(surface, value, "cooldown", color, shadow=True, midleft=(left + 24, chip.top + 40))
-            else:
-                draw_text(surface, value, "cooldown", color, shadow=True, center=(chip.centerx, chip.top + 40))
+        draw_panel(surface, CARD, "frame")
+        draw_text(surface, "PROFILE", "label", PALETTE.accent, topleft=(CARD.x + 26, CARD.y + 24))
+        owned = sum(profile.levels.values())
+        total = sum(u.max_level for u in UPGRADES)
+        wind = second_wind_cooldown(profile.level("second_wind"))
+        rows = (
+            ("coin", PALETTE.coin, "Coins", f"{profile.coins:,}", PALETTE.coin),
+            ("time_warp", PALETTE.accent, "Best survival",
+             fmt_time(profile.best_time) if profile.best_time > 0 else "--", PALETTE.text),
+            ("boots", PALETTE.player, "Upgrades", f"{owned} / {total}", PALETTE.text),
+            ("second_wind", PALETTE.second_wind, "Second Wind",
+             "Locked" if wind is None else f"{wind:g} s recharge",
+             PALETTE.text_faint if wind is None else PALETTE.second_wind),
+        )
+        y = CARD.y + 56
+        for icon, icon_color, label, value, value_color in rows:
+            draw_icon(surface, icon, (CARD.x + 40, y + 18), 22, icon_color)
+            draw_text(surface, label, "body", PALETTE.text_dim, midleft=(CARD.x + 64, y + 18))
+            draw_text(surface, value, "button", value_color, midright=(CARD.right - 26, y + 18))
+            pygame.draw.line(surface, PALETTE.border, (CARD.x + 24, y + 40), (CARD.right - 24, y + 40))
+            y += 48
+        draw_text(surface, "TIP", "label", PALETTE.accent, topleft=(CARD.x + 26, y + 14))
+        step = line_height("small")
+        for i, line in enumerate(wrap_text(self.tip, "small", CARD.width - 52)[:3]):
+            draw_text(surface, line, "small", PALETTE.text_dim, topleft=(CARD.x + 26, y + 34 + i * step))

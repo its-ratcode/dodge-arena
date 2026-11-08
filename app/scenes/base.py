@@ -9,6 +9,8 @@ import pygame
 
 from app import config
 from app.render.shapes import draw_panel
+from app.render.text import draw_text
+from app.theme.palette import PALETTE
 
 if TYPE_CHECKING:                       # scenes call back into the Game; only needed for type hints
     from app.core.game import Game
@@ -59,6 +61,16 @@ def card_rect(width: int, height: int, offset_y: int = 0) -> pygame.Rect:
 
 def draw_card(surface: pygame.Surface, rect: pygame.Rect) -> None:
     draw_panel(surface, rect, "card")
+
+
+def draw_stat_tile(surface: pygame.Surface, rect: pygame.Rect, label: str, value: str, color,
+                   value_style: str = "cooldown", note: str | None = None) -> None:
+    """A small sunken box: a caption at the top, a big value under it, and an optional note at the bottom."""
+    draw_panel(surface, rect, "slot")
+    draw_text(surface, label, "label", PALETTE.text_faint, topleft=(rect.x + 12, rect.y + 10))
+    draw_text(surface, value, value_style, color, shadow=True, topleft=(rect.x + 12, rect.y + 28))
+    if note:
+        draw_text(surface, note, "tiny", PALETTE.text_faint, bottomleft=(rect.x + 12, rect.bottom - 9))
 
 
 def ease_out(t: float) -> float:

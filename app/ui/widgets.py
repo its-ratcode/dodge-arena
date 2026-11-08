@@ -65,6 +65,10 @@ class Button:
         else:
             play_ui_sound("error")
 
+    def click(self, pos) -> None:
+        """A mouse click at ``pos``. Most widgets don't care where; some have parts (the shop's - and +)."""
+        self.activate()
+
     def update(self, dt: float, focused: bool) -> None:
         target = 1.0 if focused else 0.0
         step = dt * 10
@@ -284,7 +288,7 @@ class ButtonGroup:
             for button in self.buttons:
                 button.pressed = False
             if was_pressed:
-                self.buttons[index].activate()
+                self.buttons[index].click(event.pos)
                 return True
         elif event.type == pygame.KEYDOWN:
             for button in self.buttons:

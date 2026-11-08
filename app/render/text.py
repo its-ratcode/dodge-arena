@@ -62,8 +62,7 @@ def draw_text(surface: pygame.Surface, text: str, style: str, color: Color,
 
 def draw_keycap(surface: pygame.Surface, label: str, **anchor) -> pygame.Rect:
     """A small raised key showing a binding, e.g. [Q]."""
-    width = max(22, text_size(label, "key")[0] + 12)
-    rect = pygame.Rect(0, 0, width, 20)
+    rect = pygame.Rect(0, 0, keycap_width(label), 20)
     for name, value in anchor.items():
         setattr(rect, name, value)
     pygame.draw.rect(surface, PALETTE.key_shadow, rect.move(0, 2), border_radius=RADIUS_SM)
@@ -71,3 +70,40 @@ def draw_keycap(surface: pygame.Surface, label: str, **anchor) -> pygame.Rect:
     pygame.draw.rect(surface, lerp_color(PALETTE.key_face, PALETTE.text, 0.2), rect, 1, border_radius=RADIUS_SM)
     draw_text(surface, label, "key", PALETTE.text, center=rect.center)
     return rect
+
+
+def ellipsize(text: str, style: str, width: int) -> str:
+    """``text`` if it fits in ``width`` px, otherwise cut short with "..." so it does."""
+    font = get_font(style)
+    if font.size(text)[0] <= width:
+        return text
+    while text and font.size(text + "...")[0] > width:
+        text = text[:-1]
+    return text.rstrip() + "..."
+
+
+HintRow = list[tuple[list[str], str]]          # [(["Q", "W", "E"], "Abilities"), (["ESC"], "Back")]
+
+
+def keycap_width(label: str) -> int:
+    return max(22, text_size(label, "key")[0] + 12)
+
+
+def hint_row_width(items: HintRow) -> int:
+    width = 0
+    for keys, label in items:
+        width += sum(keycap_width(k) + 4 for k in keys) + 2 + text_size(label, "small")[0] + 18
+    return width - 18
+
+
+def draw_hint_row(surface: pygame.Surface, items: HintRow, x: int, y: int, align: str = "left") -> None:
+    """A row of keycaps with labels, e.g. [Q][W][E] Abilities   [ESC] Back.
+    ``y`` is the top of the keycaps; ``align`` is "left", "center" or "right" around ``x``."""
+    if align == "center":
+        x -= hint_row_width(items) // 2
+    elif align == "right":
+        x -= hint_row_width(items)
+    for keys, label in items:
+        for key in keys:
+            x = draw_keycap(surface, key, topleft=(x, y)).right + 4
+        x = draw_text(surface, label, "small", PALETTE.text_dim, shadow=True, midleft=(x + 2, y + 10)).right + 18

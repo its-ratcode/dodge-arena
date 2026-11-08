@@ -5,7 +5,7 @@ import pygame
 from app.core.settings import ACTION_LABELS, MOVE_BUTTONS
 from app.render.icons import draw_icon
 from app.render.shapes import draw_panel
-from app.render.text import draw_keycap, draw_text, line_height, wrap_text
+from app.render.text import draw_hint_row, draw_text, line_height, wrap_text
 from app.scenes.base import Scene, card_rect, dim, draw_card
 from app.theme.palette import PALETTE
 from app.ui.widgets import (Button, ButtonGroup, ChoiceRow, ColorRow, KeyBindRow, TabButton, ToggleRow,
@@ -118,6 +118,8 @@ class SettingsScene(Scene):
                       "Always off with Reduced motion."),
             ToggleRow("Movement path", self._toggle("show_path"), lambda: o["show_path"], size,
                       "A dotted line from you to where you are walking."),
+            ToggleRow("Control hints", self._toggle("show_hints"), lambda: o["show_hints"], size,
+                      "Your keys in the top-left corner during a run, as a reminder."),
         ]
 
     def audio_rows(self, size) -> list[Button]:
@@ -245,12 +247,9 @@ class SettingsScene(Scene):
             y += line_height("small")
 
     def draw_key_hints(self, surface: pygame.Surface) -> None:
-        x = self.reset_button.rect.right + 18
-        y = self.reset_button.rect.centery
-        for keys, label in ((("ARROWS",), "Move"), (("ENTER",), "Change")):
-            for key in keys:
-                x = draw_keycap(surface, key, midleft=(x, y)).right + 6
-            x = draw_text(surface, label, "tiny", PALETTE.text_faint, midleft=(x, y)).right + 14
+        middle = (self.reset_button.rect.right + self.back_button.rect.left) // 2
+        draw_hint_row(surface, [(["ARROWS"], "Move"), (["ENTER"], "Change")], middle,
+                      self.reset_button.rect.centery - 10, align="center")
 
     def draw_preview(self, surface: pygame.Surface) -> None:
         """A strip showing the main colors as they look right now."""

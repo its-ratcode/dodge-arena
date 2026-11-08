@@ -3,11 +3,12 @@
 Layout:
     top center      timer pill, danger bar, pop-up messages under it
     middle          "GET READY" / "GO!" at the start of a run
-    top right       coins picked up this run
-    top left        frame rate, if "Show frame rate" is on
+    top right       coins picked up this run, best time under them
+    top left        controls cheat-sheet and frame rate (each can be turned off)
     bottom center   ability bar (abilities | utility spells | power-up), key labels under the boxes
     left of bar     active effects (stasis, shield, sprint ...) with the time they have left
-    right of bar    Second Wind, if owned: ready, or recharging
+    right of bar    Second Wind if owned (ready, or recharging), then the held power-up's card:
+                    what it does, its key, and a bar of how long it keeps
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ from app import config
 from app.render.icons import draw_icon
 from app.render.shapes import (draw_bar, draw_cooldown_sweep, draw_glow, draw_panel,
                                draw_progress_ring)
-from app.render.text import draw_keycap, draw_text, get_font, text_size
+from app.render.text import HintRow, draw_hint_row, draw_keycap, draw_text, ellipsize, get_font, text_size
 from app.skills.loadout import SkillSlot
 from app.theme.accessibility import A11Y, wobble
 from app.theme.palette import PALETTE, danger_color
@@ -61,12 +62,17 @@ def _toast_pill(text: str, color: Color, icon: str | None) -> pygame.Surface:
 class Hud:
     """Draws the HUD for a World. Holds no game state of its own."""
 
-    def draw(self, surface: pygame.Surface, world: World, fps: float | None = None) -> None:
+    def draw(self, surface: pygame.Surface, world: World, fps: float | None = None,
+             hints: list[HintRow] | None = None, best_time: float = 0.0) -> None:
+        """``hints`` are the rows of the controls cheat-sheet (None = hidden); ``best_time`` shows under the coins."""
         self.draw_timer(surface, world)
-        self.draw_coins(surface, world)
+        self.draw_coins(surface, world, best_time)
+        y = HUD_MARGIN + 4
+        for row in hints or []:
+            draw_hint_row(surface, row, HUD_MARGIN + 4, y)
+            y += 28
         if fps is not None:
-            draw_text(surface, f"{fps:.0f} FPS", "label", PALETTE.text_faint, shadow=True,
-                      topleft=(HUD_MARGIN + 4, HUD_MARGIN + 4))
+            draw_text(surface, f"{fps:.0f} FPS", "label", PALETTE.text_faint, shadow=True, topleft=(HUD_MARGIN + 4, y))
         slots = [*world.loadout, world.powerup_slot]
         groups = self.slot_groups(world)
         bar, rects = self.bar_layout(groups)
@@ -80,8 +86,12 @@ class Hud:
             else:
                 self.draw_slot(surface, world, slot, rect)
         self.draw_buffs(surface, world, bar)
+        right = bar.right
         if world.second_wind:
             self.draw_second_wind(surface, world, bar)
+            right += 16 + HUD_BUFF_RADIUS * 2
+        if world.powerup_slot.skill:
+            self.draw_held_powerup(surface, world, bar, right)
         self.draw_toasts(surface, world)
         self.draw_intro(surface, world)
 
@@ -138,13 +148,32 @@ class Hud:
         label = "DANGER MAX" if danger >= 1 else f"DANGER {int(danger * 100)}%"
         draw_text(surface, label, "label", color, shadow=True, midtop=(cx, bar.bottom + 4))
 
-    def draw_coins(self, surface: pygame.Surface, world: World) -> None:
+    def draw_coins(self, surface: pygame.Surface, world: World, best_time: float) -> None:
+        """Coins picked up this run, with the best time to beat underneath."""
         chip = pygame.Rect(0, 0, 96, 36)
         chip.topright = (config.SCREEN_WIDTH - HUD_MARGIN, HUD_MARGIN)
         draw_panel(surface, chip, "chip")
         draw_icon(surface, "coin", (chip.x + 20, chip.centery), 20, PALETTE.coin)
         draw_text(surface, str(world.coins_picked), "cooldown", PALETTE.coin, shadow=True,
                   midleft=(chip.x + 36, chip.centery))
+        if best_time > 0:
+            draw_text(surface, f"BEST {fmt_time(best_time)}", "label", PALETTE.text_faint, shadow=True,
+                      topright=(chip.right - 4, chip.bottom + 6))
+
+    def draw_held_powerup(self, surface: pygame.Surface, world: World, bar: pygame.Rect, left: int) -> None:
+        """A card right of the bar for the held power-up: what it does, its key, and how long it keeps."""
+        skill = world.powerup_slot.skill
+        rect = pygame.Rect(left + 16, bar.y + 6, 0, bar.height - 12)
+        rect.width = min(300, config.SCREEN_WIDTH - HUD_MARGIN - rect.x)
+        draw_panel(surface, rect, "chip")
+        pygame.draw.rect(surface, skill.color, (rect.x + 6, rect.y + 10, 3, rect.height - 20), border_radius=2)
+        draw_icon(surface, skill.icon, (rect.x + 30, rect.y + 24), 24, skill.color)
+        name = draw_text(surface, skill.name, "button", skill.color, shadow=True, midleft=(rect.x + 52, rect.y + 22))
+        draw_keycap(surface, world.powerup_slot.key_label, midleft=(name.right + 10, name.centery))
+        line = ellipsize(skill.summary, "tiny", rect.width - 64)
+        draw_text(surface, line, "tiny", PALETTE.text_dim, topleft=(rect.x + 52, rect.y + 38))
+        draw_bar(surface, pygame.Rect(rect.x + 52, rect.bottom - 12, rect.width - 66, 4),
+                 world.powerup_hold / config.POWERUP_HOLD_TIME, skill.color)
 
     # --- Ability bar -----------------------------------------------------------------------
     @staticmethod

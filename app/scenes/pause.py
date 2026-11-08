@@ -1,14 +1,18 @@
-"""The pause scene: the run frozen behind a small card."""
+"""The pause scene: the run frozen behind a card with its numbers so far."""
 
 import pygame
 
 from app.render.text import draw_text
-from app.scenes.base import Scene, card_rect, dim, draw_card
+from app.scenes.base import Scene, card_rect, dim, draw_card, draw_stat_tile
 from app.scenes.play import PlayScene
-from app.theme.palette import PALETTE
-from app.theme.styles import BUTTON_WIDTH, CARD_PAD
+from app.theme.palette import PALETTE, danger_color
+from app.theme.styles import BUTTON_GAP, BUTTON_HEIGHT, BUTTON_WIDTH, CARD_PAD
 from app.ui.widgets import Button, ButtonList
 from app.util.timefmt import fmt_time
+
+TILES_TOP = 86          # px below the card's top: the row of stat tiles
+TILE_H = 62
+BUTTONS_TOP = 176       # px below the card's top: the first button
 
 
 class PauseScene(Scene):
@@ -19,14 +23,16 @@ class PauseScene(Scene):
     def __init__(self, game, play: PlayScene) -> None:
         super().__init__(game)
         self.play = play
-        self.card = card_rect(BUTTON_WIDTH + CARD_PAD * 2, 450)
-        self.buttons = ButtonList([
-            Button("Resume", self.resume, hotkey=game.settings.keybinds["pause"], primary=True),
-            Button("Settings", game.open_settings),
-            Button("How to play", game.open_guide, hotkey="h"),
-            Button("Restart", game.start_run, hotkey="r"),
-            Button("Main menu", game.open_main_menu, hotkey="m"),
-        ], center=(self.card.centerx, self.card.bottom - CARD_PAD - 144))
+        buttons = [
+            Button("Resume", self.resume, hotkey=game.settings.keybinds["pause"], primary=True, icon="play"),
+            Button("Settings", game.open_settings, icon="gear"),
+            Button("How to play", game.open_guide, hotkey="h", icon="book"),
+            Button("Restart", game.start_run, hotkey="r", icon="restart"),
+            Button("Main menu", game.open_main_menu, hotkey="m", icon="exit"),
+        ]
+        stack = len(buttons) * BUTTON_HEIGHT + (len(buttons) - 1) * BUTTON_GAP
+        self.card = card_rect(BUTTON_WIDTH + CARD_PAD * 2 + 60, BUTTONS_TOP + stack + CARD_PAD)
+        self.buttons = ButtonList(buttons, center=(self.card.centerx, self.card.top + BUTTONS_TOP + stack // 2))
 
     def resume(self) -> None:
         self.game.scene = self.play
@@ -40,9 +46,17 @@ class PauseScene(Scene):
     def draw(self, surface: pygame.Surface) -> None:
         self.game.draw_world(surface)
         dim(surface, 150)
-        draw_card(surface, self.card)
-        cx = self.card.centerx
-        draw_text(surface, "PAUSED", "heading", PALETTE.text, shadow=True, midtop=(cx, self.card.top + CARD_PAD))
-        draw_text(surface, f"Survived {fmt_time(self.game.world.survival_time)} so far", "small",
-                  PALETTE.text_dim, midtop=(cx, self.card.top + CARD_PAD + 52))
+        card = self.card
+        draw_card(surface, card)
+        draw_text(surface, "PAUSED", "heading", PALETTE.text, shadow=True, midtop=(card.centerx, card.top + 22))
+        # Three tiles: the run so far.
+        world = self.game.world
+        tiles = (("TIME", fmt_time(world.survival_time), PALETTE.text),
+                 ("COINS", f"+{world.coins_picked}", PALETTE.coin),
+                 ("DANGER", f"{int(world.danger * 100)}%", danger_color(world.danger)))
+        inner = card.width - CARD_PAD * 2
+        tile_w = (inner - 2 * 10) // 3
+        for i, (label, value, color) in enumerate(tiles):
+            rect = pygame.Rect(card.x + CARD_PAD + i * (tile_w + 10), card.top + TILES_TOP, tile_w, TILE_H)
+            draw_stat_tile(surface, rect, label, value, color)
         self.buttons.draw(surface)

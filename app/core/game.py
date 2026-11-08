@@ -13,6 +13,7 @@ from app.core.world import RunRules, World
 from app.meta import APP_NAME
 from app.progression.profile import Profile, RunResult
 from app.render.arena import build_arena_background, build_vignette
+from app.render.text import HintRow
 from app.scenes.base import Scene
 from app.scenes.game_over import GameOverScene
 from app.scenes.guide import GuideScene
@@ -25,6 +26,7 @@ from app.theme.accessibility import A11Y
 from app.theme.palette import PALETTE, apply_colors
 from app.ui.hud import Hud
 from app.ui.widgets import set_ui_sound
+from app.util.keys import key_label
 
 
 class Game:
@@ -184,5 +186,16 @@ class Game:
         self.world.draw(layer, show_path=self.settings.options["show_path"])
         surface.fill(PALETTE.background)
         surface.blit(layer, self.shake_offset())
-        fps = self.clock.get_fps() if self.settings.options["show_fps"] else None
-        self.hud.draw(surface, self.world, fps)
+        o = self.settings.options
+        fps = self.clock.get_fps() if o["show_fps"] else None
+        hints = self.control_hints() if o["show_hints"] else None
+        self.hud.draw(surface, self.world, fps, hints, self.profile.best_time)
+
+    def control_hints(self) -> list[HintRow]:
+        """The controls cheat-sheet, built from the player's own bindings."""
+        s = self.settings
+        key = {action: key_label(name) for action, name in s.keybinds.items()}
+        mouse = "RMB" if s.move_button == 3 else "LMB"
+        return [[([mouse], "Move"), ([key["pause"]], "Pause")],
+                [([key["shield"], key["wall"], key["dash"]], "Abilities"), ([key["sprint"], key["blink"]], "Utility"),
+                 ([key["powerup"]], "Power-up")]]

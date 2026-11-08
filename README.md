@@ -80,7 +80,7 @@ Everything is in **Settings** and saved right away:
 |---|---|
 | Accessibility | Color modes (Deuteranopia, Protanopia, Tritanopia, High contrast), your own color for the player, bolts and lasers, threat outlines, reduce flashing, reduced motion |
 | Gameplay | Game speed (50-100%), laser warning time (100-200%), starting danger, pause on focus loss, frame rate |
-| Display | Screen shake, movement path preview |
+| Display | Screen shake, movement path preview, control hints (your keys in the top-left corner) |
 | Audio | Master, sound effect and music volume, adaptive music, menu sounds, laser audio cue (beeps and a charge-up before lasers fire) |
 
 Every sound and the music are synthesized in code when the game starts: there are no sound files.

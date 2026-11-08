@@ -128,6 +128,31 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
         for y in (-0.55, 0.55):
             for x0 in (-0.9, -0.3, 0.3):
                 pygame.draw.line(surface, color, p(x0, y), p(x0 + 0.35, y), max(1, w - 1))
+    elif name == "play":
+        pygame.draw.polygon(surface, color, [p(-0.55, -0.75), p(0.8, 0), p(-0.55, 0.75)])
+    elif name == "restart":
+        # A circular arrow, the other way round from "haste".
+        ring = pygame.Rect(0, 0, 1.5 * s, 1.5 * s)
+        ring.center = (round(cx), round(cy))
+        pygame.draw.arc(surface, color, ring, math.radians(-60), math.radians(210), w + 1)
+        pygame.draw.polygon(surface, color, [p(-0.95, -0.15), p(-0.42, -0.15), p(-0.68, 0.32)])
+    elif name == "book":
+        for side in (-1, 1):
+            pygame.draw.polygon(surface, color, [p(0, -0.6), p(0.9 * side, -0.75), p(0.9 * side, 0.7), p(0, 0.85)], w)
+    elif name == "gear":
+        for k in range(8):
+            angle = k * math.pi / 4
+            pygame.draw.line(surface, color, p(math.cos(angle) * 0.55, math.sin(angle) * 0.55),
+                             p(math.cos(angle) * 0.92, math.sin(angle) * 0.92), w + 2)
+        pygame.draw.circle(surface, color, (cx, cy), max(3, round(s * 0.6)), w)
+        pygame.draw.circle(surface, color, (cx, cy), max(1, round(s * 0.18)))
+    elif name == "exit":
+        # A door with an arrow walking out of it.
+        door = pygame.Rect(0, 0, 0.9 * s, 1.6 * s)
+        door.center = (round(cx - 0.35 * s), round(cy))
+        pygame.draw.rect(surface, color, door, w, border_radius=2)
+        pygame.draw.line(surface, color, p(-0.05, 0), p(0.9, 0), w)
+        pygame.draw.lines(surface, color, False, [p(0.55, -0.35), p(0.9, 0), p(0.55, 0.35)], w)
     elif name == "empty":
         # A dashed diamond: an empty power-up slot.
         corners = [p(0, -0.7), p(0.7, 0), p(0, 0.7), p(-0.7, 0)]
@@ -139,5 +164,6 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
 
 
 ICON_NAMES = ("shield", "wall", "dash", "sprint", "blink", "coin", "coin_rush", "stasis", "time_warp", "warp",
-              "nova", "second_wind", "boots", "haste", "magnet", "bolt", "laser", "empty")
+              "nova", "second_wind", "boots", "haste", "magnet", "bolt", "laser", "play", "restart", "book", "gear",
+              "exit", "empty")
 """Every icon drawn above."""

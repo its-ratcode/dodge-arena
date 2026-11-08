@@ -34,6 +34,7 @@ OPTIONS: dict[str, tuple[object, tuple]] = {
     # Display
     "screen_shake": (True, ON_OFF),
     "show_path": (True, ON_OFF),                            # dotted line to where you are walking
+    "show_hints": (True, ON_OFF),                           # controls cheat-sheet in the top-left corner
     # Accessibility
     "color_mode": ("default", tuple(COLOR_MODES)),
     "color_player": ("Auto", tuple(SWATCHES)),
