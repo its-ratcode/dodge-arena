@@ -8,14 +8,15 @@ from app.render.shapes import draw_panel
 from app.render.text import draw_keycap, draw_text, line_height, wrap_text
 from app.scenes.base import Scene, card_rect, dim, draw_card
 from app.theme.palette import PALETTE
-from app.ui.widgets import Button, ButtonGroup, ChoiceRow, ColorRow, KeyBindRow, TabButton, ToggleRow
+from app.ui.widgets import (Button, ButtonGroup, ChoiceRow, ColorRow, KeyBindRow, TabButton, ToggleRow,
+                            VolumeRow, play_ui_sound)
 from app.util.keys import is_valid_key_name
 
 CARD_W, CARD_H = 780, 660
 PAD = 28
 ROW_H, ROW_GAP = 40, 8
 CONFIRM_TIME = 3.0          # s to click "Reset to defaults" a second time
-TABS = ("Controls", "Gameplay", "Accessibility")
+TABS = ("Controls", "Gameplay", "Audio", "Accessibility")
 
 COLOR_MODE_LABELS = {"default": "Default", "deuteranopia": "Deuteranopia", "protanopia": "Protanopia",
                      "tritanopia": "Tritanopia", "high_contrast": "High contrast"}
@@ -54,7 +55,7 @@ class SettingsScene(Scene):
             self.tabs.append(tab)
         self.rows_top = self.card.y + 134
 
-        self.back_button = Button("Back", self.go_back, hotkey="escape", primary=True, size=(200, 44))
+        self.back_button = Button("Back", self.go_back, hotkey="escape", primary=True, sound="back", size=(200, 44))
         self.back_button.rect.bottomright = (self.card.right - PAD, self.card.bottom - 24)
         self.reset_button = Button(lambda: "Click again to confirm" if self.confirm_timer > 0 else "Reset to defaults",
                                    self.reset, size=(250, 44))
@@ -75,11 +76,12 @@ class SettingsScene(Scene):
     def build_tab(self) -> None:
         """Create the rows of the open tab and a fresh focus group, focused on the tab itself."""
         size = (self.card.width - PAD * 2, ROW_H)
-        self.rows = (self.control_rows, self.gameplay_rows, self.accessibility_rows)[self.tab](size)
+        builders = (self.control_rows, self.gameplay_rows, self.audio_rows, self.accessibility_rows)
+        self.rows = builders[self.tab](size)
         for i, row in enumerate(self.rows):
             row.rect.topleft = (self.card.x + PAD, self.rows_top + i * (ROW_H + ROW_GAP))
         self.group = ButtonGroup(self.tabs + self.rows + [self.reset_button, self.back_button])
-        self.group.focus = self.tab
+        self.group.set_focus(self.tab)
 
     def control_rows(self, size) -> list[Button]:
         s = self.game.settings
@@ -105,6 +107,20 @@ class SettingsScene(Scene):
                       "Slows the whole run down. " + ASSIST_NOTE),
             ChoiceRow("Laser warning time", self._cycle("laser_warning"), lambda: f"{o['laser_warning']}%", size,
                       "Lasers warn you longer before they fire. " + ASSIST_NOTE),
+        ]
+
+    def audio_rows(self, size) -> list[Button]:
+        o = self.game.settings.options
+        return [
+            VolumeRow("Master volume", self._cycle("master_volume"), lambda: o["master_volume"], size,
+                      "Everything at once. Left / Right to change; you hear the new level straight away."),
+            VolumeRow("Sound effects", self._cycle("sfx_volume"), lambda: o["sfx_volume"], size,
+                      "Skills, coins, threats and menus."),
+            ToggleRow("Menu sounds", self._toggle("ui_sounds"), lambda: o["ui_sounds"], size,
+                      "Soft clicks when you move around and choose things in menus."),
+            ToggleRow("Laser audio cue", self._toggle("laser_audio_cue"), lambda: o["laser_audio_cue"], size,
+                      "Beeps when a laser appears and a rising whine just before it fires. "
+                      "Higher, faster beeps mean higher danger."),
         ]
 
     def accessibility_rows(self, size) -> list[Button]:
@@ -174,9 +190,11 @@ class SettingsScene(Scene):
             step = 1 if event.key == pygame.K_RIGHT else -1
             if isinstance(self.focused, ChoiceRow):
                 self.focused.change(step)
+                play_ui_sound("tick")                     # after the change: a volume row ticks at its new level
                 return
             if isinstance(self.focused, TabButton):
                 self._open_tab((self.tab + step) % len(TABS))()
+                play_ui_sound("tick")
                 return
         self.group.handle_event(event)
 

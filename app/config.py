@@ -138,6 +138,14 @@ COINS_PER_SECOND_SURVIVED = 0.2    # end-of-run bonus: 1 coin per 5 s alive
 MIN_COOLDOWN_MULT = 0.3        # cooldowns never drop below 30% however much haste you buy
 SAVE_FILENAME = "save.json"    # in the user data folder (app.core.storage); delete it to reset progress
 
+# --- Audio ---------------------------------------------------------------------------------------
+AUDIO_RATE = 22050             # samples per second (plenty for synthesized effects, quick to build)
+AUDIO_CHANNELS = 24            # sounds that can play at the same time
+SOUND_MIN_GAP = 0.03           # s; the same sound can't retrigger faster than this
+COIN_COMBO_WINDOW = 1.5        # s; coins grabbed within this window of each other rise in pitch ...
+COIN_COMBO_STEPS = 6           # ... through this many pitches
+LASER_CHARGE_SOUND_TIME = 0.6  # s before a laser fires that its charge-up whine starts
+
 # --- Effects ----------------------------------------------------------------------------------
 BURST_DURATION = 0.35          # s; ring shown when a hit is blocked or a bolt hits a wall
 BLINK_EFFECT_DURATION = 0.4    # s

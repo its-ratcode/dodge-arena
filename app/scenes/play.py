@@ -4,6 +4,8 @@ import pygame
 
 from app.scenes.base import Scene
 
+LASER_CUES = ("laser_warn", "laser_charge")       # sounds that only warn; the "laser cue" option mutes them
+
 
 class PlayScene(Scene):
     """Moves, casts and pauses. The run itself lives in ``game.world``.
@@ -33,8 +35,19 @@ class PlayScene(Scene):
         if pygame.mouse.get_pressed()[self.game.settings.move_button - 1]:
             world.command_move(pygame.mouse.get_pos(), new_click=False)
         world.update(dt * world.rules.game_speed)          # the Game speed assist slows the whole run
+        self.play_sounds()
         if world.over:
             self.game.end_run()
+
+    def play_sounds(self) -> None:
+        """Play everything the World reported this frame, then forget it."""
+        world, audio = self.game.world, self.game.audio
+        cues_on = self.game.settings.options["laser_audio_cue"]
+        for name in world.events:
+            if name.startswith(LASER_CUES) and not cues_on:
+                continue                                   # warning beeps and charge-up are optional
+            audio.play(name)
+        world.events.clear()
 
     def draw(self, surface: pygame.Surface) -> None:
         self.game.draw_world(surface)

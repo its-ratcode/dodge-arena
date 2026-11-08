@@ -13,18 +13,34 @@ from app.theme.styles import BUTTON_GAP, BUTTON_HEIGHT, BUTTON_WIDTH, PANEL_STYL
 from app.util.keys import key_label
 from app.util.mathx import Color, lerp_color
 
+# --- Menu sounds ---------------------------------------------------------------------------------
+# Widgets don't know about audio. The Game plugs a player in once with set_ui_sound();
+# until then (and in tests) sounds are silently skipped.
+_ui_sound: Callable[[str], object] = lambda name: None
+
+
+def set_ui_sound(play: Callable[[str], object]) -> None:
+    global _ui_sound
+    _ui_sound = play
+
+
+def play_ui_sound(name: str) -> None:
+    """"hover", "click", "back", "tick", "error", "buy", "sell"."""
+    _ui_sound(name)
+
 
 class Button:
     """A clickable box with a label, an optional icon and an optional hotkey keycap.
 
     ``primary`` buttons use the accent color for the main action of a screen.
-    A disabled button can still be focused but does nothing. ``highlight``
-    eases between 0 and 1 so hovering fades in instead of popping.
+    A disabled button can still be focused but does nothing (it plays an error
+    sound). ``highlight`` eases between 0 and 1 so hovering fades in instead
+    of popping. ``sound`` is the menu sound it makes when used.
     """
 
     def __init__(self, label: str | Callable[[], str], action: Callable[[], None], hotkey: str | None = None,
                  primary: bool = False, icon: str | None = None, style: str = "button",
-                 size: tuple[int, int] = (BUTTON_WIDTH, BUTTON_HEIGHT)) -> None:
+                 size: tuple[int, int] = (BUTTON_WIDTH, BUTTON_HEIGHT), sound: str = "click") -> None:
         self._label = label                 # a string, or a function for labels that change (prices)
         self.action = action
         self.hotkey = hotkey
@@ -32,6 +48,7 @@ class Button:
         self.primary = primary
         self.icon = icon
         self.style = style
+        self.sound = sound
         self.enabled = True
         self.rect = pygame.Rect((0, 0), size)
         self.highlight = 0.0
@@ -43,7 +60,10 @@ class Button:
 
     def activate(self) -> None:
         if self.enabled:
+            play_ui_sound(self.sound)
             self.action()
+        else:
+            play_ui_sound("error")
 
     def update(self, dt: float, focused: bool) -> None:
         target = 1.0 if focused else 0.0
@@ -93,7 +113,7 @@ class SettingRow(Button):
 
     def __init__(self, label: str, action: Callable[[], None], value: Callable[[], str],
                  size: tuple[int, int], desc: str = "") -> None:
-        super().__init__(label, action, size=size)
+        super().__init__(label, action, size=size, sound="tick")
         self.value = value
         self.desc = desc
 
@@ -113,6 +133,23 @@ class ChoiceRow(SettingRow):
                  size: tuple[int, int], desc: str = "") -> None:
         super().__init__(label, lambda: change(1), value, size, desc)
         self.change = change
+
+
+class VolumeRow(ChoiceRow):
+    """A volume from 0 to 100%, shown as ten segments plus the number."""
+
+    def __init__(self, label: str, change: Callable[[int], None], percent: Callable[[], int],
+                 size: tuple[int, int], desc: str = "") -> None:
+        super().__init__(label, change, lambda: f"{percent()}%", size, desc)
+        self.percent = percent
+
+    def draw_value(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+        text = draw_text(surface, self.value(), "small", PALETTE.text, midright=(rect.right - 16, rect.centery))
+        filled = self.percent() // 10
+        for i in range(10):
+            seg = pygame.Rect(0, 0, 8, 14)
+            seg.midright = (text.left - 14 - (9 - i) * 11, rect.centery)
+            pygame.draw.rect(surface, PALETTE.accent if i < filled else PALETTE.track, seg, border_radius=2)
 
 
 class ColorRow(ChoiceRow):
@@ -169,7 +206,7 @@ class TabButton(Button):
 
     def __init__(self, label: str, action: Callable[[], None], is_open: Callable[[], bool],
                  size: tuple[int, int]) -> None:
-        super().__init__(label, action, size=size)
+        super().__init__(label, action, size=size, sound="tick")
         self.is_open = is_open
 
     def draw(self, surface: pygame.Surface) -> None:
@@ -201,6 +238,13 @@ class ButtonGroup:
     def __init__(self, buttons: list[Button]) -> None:
         self.buttons = buttons
         self.focus = 0
+        self._sounded_focus = 0             # the focus the last hover sound was played for
+
+    def set_focus(self, index: int, sound: bool = False) -> None:
+        """Move the focus from code (not from the player), silently unless ``sound``."""
+        self.focus = index
+        if not sound:
+            self._sounded_focus = index
 
     def _button_at(self, pos) -> int | None:
         for i, button in enumerate(self.buttons):
@@ -262,6 +306,9 @@ class ButtonGroup:
         return False
 
     def update(self, dt: float) -> None:
+        if self.focus != self._sounded_focus:              # focus moved (mouse or keys): a soft tick
+            self._sounded_focus = self.focus
+            play_ui_sound("hover")
         for i, button in enumerate(self.buttons):
             button.update(dt, i == self.focus)
 

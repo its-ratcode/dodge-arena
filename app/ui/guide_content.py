@@ -142,6 +142,8 @@ def build_guide(settings: Settings) -> list[Section]:
                 "Game speed (down to 50%) and longer laser warnings (up to 200%) make runs easier to learn. "
                 "Runs with these assists still earn coins, but don't set best times.",
                 "Starting danger lets you practise the fast part of a run straight away.",
+                "Settings > Audio has a laser audio cue: beeps when a laser appears (higher and faster as "
+                "danger rises) and a rising whine just before it fires.",
             ]),
         ]),
         Section("Tips", [

@@ -15,6 +15,7 @@ ACTION_LABELS = {
 MOVE_BUTTONS = {3: "Right click", 1: "Left click"}      # mouse button -> label
 
 ON_OFF = (False, True)
+VOLUMES = tuple(range(0, 101, 10))                          # % steps
 # Option name -> (default, allowed values). A saved value is used only if it is one of them.
 OPTIONS: dict[str, tuple[object, tuple]] = {
     # Gameplay
@@ -23,6 +24,11 @@ OPTIONS: dict[str, tuple[object, tuple]] = {
     "start_danger": (0, (0, 25, 50, 75, 100)),             # % danger a run starts at
     "game_speed": (100, (50, 60, 70, 80, 90, 100)),        # % of normal speed
     "laser_warning": (100, (100, 125, 150, 200)),          # % of the normal laser warning time
+    # Audio
+    "master_volume": (80, VOLUMES),
+    "sfx_volume": (80, VOLUMES),
+    "ui_sounds": (True, ON_OFF),                            # hover / click sounds in menus
+    "laser_audio_cue": (True, ON_OFF),                      # beeps and a charge-up before lasers fire
     # Accessibility
     "color_mode": ("default", tuple(COLOR_MODES)),
     "color_player": ("Auto", tuple(SWATCHES)),

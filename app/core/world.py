@@ -44,6 +44,10 @@ class World:
     A new run is simply a new World. ``stats`` holds the upgrade-dependent
     numbers for the run and ``rules`` the player's gameplay settings. ``killer``
     is set to whatever hit the player, which ends the run.
+
+    ``events`` collects the names of sounds that happened ("shield", "block",
+    "coin2" ...). The World never plays audio itself; the play scene drains the
+    list every frame, so the simulation stays testable without a sound card.
     """
 
     def __init__(self, stats: RunStats | None = None, keybinds: dict[str, str] | None = None,
@@ -66,6 +70,9 @@ class World:
         self.coins: list[Coin] = []
         self.coins_picked = 0                  # value collected this run (banked at game over)
         self.coin_timer = config.COIN_FIRST_DELAY
+        self.coin_combo = 0                    # quick pickups in a row (raises the coin sound's pitch)
+        self.last_coin_time = -10.0
+        self.events: list[str] = []
         self.bolts: list[Bolt] = []
         self.lasers: list[Laser] = []
         self.walls: list[Wall] = []
@@ -113,7 +120,10 @@ class World:
         """Cast the skill in a loadout slot, aimed at ``target`` (the cursor)."""
         if not self.can_cast():
             return False
-        return self.loadout[slot_index].skill.try_cast(self, Vector2(target))
+        skill = self.loadout[slot_index].skill
+        cast = skill.try_cast(self, Vector2(target))
+        self.events.append(skill.icon if cast else "denied")      # a skill's sound is named like its icon
+        return cast
 
     def use_powerup(self, target) -> bool:
         """Use the held power-up, aimed at ``target``. The slot empties after one use."""
@@ -122,6 +132,7 @@ class World:
             return False
         self.powerup_slot.skill = None
         self.effects.append(Burst(self.player.pos, powerup.color, scale=1.2))
+        self.events.append(powerup.icon)
         return True
 
     def aim_direction(self, target) -> Vector2:
@@ -160,6 +171,8 @@ class World:
             slot.skill.update(dt)
         if self.second_wind:
             self.second_wind.update(dt)
+            if self.second_wind.ready_flash == 1.0:          # recharged this very frame
+                self.events.append("second_wind_ready")
         self.player.update(dt)
         if self.marker:
             self.marker.update(dt)
@@ -167,8 +180,10 @@ class World:
         self.update_spawning(threat_dt)
         self.update_coins(dt)
         self.update_powerups(dt)
-        for threat in (*self.bolts, *self.lasers):
-            threat.update(threat_dt)
+        for bolt in self.bolts:
+            bolt.update(threat_dt)
+        for laser in self.lasers:
+            self.update_laser(laser, threat_dt)
         for thing in (*self.walls, *self.effects):
             thing.update(dt)
         self.bolts = [b for b in self.bolts if not b.is_off_screen()]
@@ -177,6 +192,16 @@ class World:
         self.effects = [e for e in self.effects if e.alive]
         self.block_with_walls()
         self.check_hits()
+
+    def update_laser(self, laser: Laser, dt: float) -> None:
+        """Age a laser, noting the moments its charge-up starts and its beam fires."""
+        charge_at = laser.warning_time - config.LASER_CHARGE_SOUND_TIME
+        was_age, was_firing = laser.age, laser.firing
+        laser.update(dt)
+        if was_age < charge_at <= laser.age:
+            self.events.append("laser_charge")
+        if laser.firing and not was_firing:
+            self.events.append("laser_fire")
 
     def update_spawning(self, dt: float) -> None:
         danger = self.danger
@@ -212,7 +237,15 @@ class World:
                 coin.remaining = 0
                 self.coins_picked += coin.value * multiplier
                 self.effects.append(Burst(coin.pos, PALETTE.coin, scale=1.3 if coin.big else 0.8))
+                self.coin_sound(coin)
         self.coins = [c for c in self.coins if c.alive]
+
+    def coin_sound(self, coin: Coin) -> None:
+        """Coins grabbed in quick succession play a little higher each time."""
+        quick = self.survival_time - self.last_coin_time <= config.COIN_COMBO_WINDOW
+        self.coin_combo = min(self.coin_combo + 1, config.COIN_COMBO_STEPS - 1) if quick else 0
+        self.last_coin_time = self.survival_time
+        self.events.append("coin_big" if coin.big else f"coin{self.coin_combo}")
 
     def update_powerups(self, dt: float) -> None:
         """One pickup on the map at a time; walking over it fills (or replaces) the held slot."""
@@ -220,6 +253,7 @@ class World:
             self.powerup_hold -= dt
             if self.powerup_hold <= 0:
                 self.powerup_slot.skill = None                      # held too long: it expires
+                self.events.append("powerup_lost")
         if self.pickup is None:
             self.pickup_timer -= dt
             if self.pickup_timer <= 0:
@@ -231,6 +265,7 @@ class World:
             self.powerup_slot.skill = self.pickup.kind()
             self.powerup_hold = config.POWERUP_HOLD_TIME
             self.effects.append(Burst(self.pickup.pos, self.pickup.kind.color_of(), scale=1.3))
+            self.events.append("powerup_get")
         elif self.pickup.alive:
             return
         self.pickup = None                                          # taken or expired
@@ -262,6 +297,7 @@ class World:
         for bolt in self.bolts:
             if any(bolt.shape.collides_rect(wall.shape) for wall in self.walls):
                 self.effects.append(Burst(bolt.shape.center, PALETTE.wall))
+                self.events.append("wall_hit")
             else:
                 survivors.append(bolt)
         self.bolts = survivors
@@ -290,13 +326,16 @@ class World:
         p = self.player
         if p.consume_shield():
             self.effects.append(Burst(p.pos, PALETTE.shield, scale=1.4))
+            self.events.append("block")
             return False
         if self.second_wind and self.second_wind.ready:
             self.second_wind.trigger()
             p.invulnerable_remaining = config.SECOND_WIND_INVULN_TIME
             self.effects.append(Burst(p.pos, PALETTE.second_wind, scale=1.8))
+            self.events.append("second_wind")
             return False
         self.killer = source
+        self.events.append("death")
         return True
 
     def spawn_bolt(self) -> None:
@@ -321,6 +360,7 @@ class World:
         origin = self.player.pos + Vector2(1, 0).rotate(random.uniform(0, 360)) * 100
         warning = ramp(config.LASER_WARNING_START, config.LASER_WARNING_END, self.danger) * self.rules.laser_warning
         self.lasers.append(Laser(origin, self.player.pos, warning))
+        self.events.append(f"laser_warn{min(2, int(self.danger * 3))}")     # 3 tiers: higher and faster beeps
 
     # --- Drawing -------------------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:

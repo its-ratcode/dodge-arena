@@ -3,6 +3,7 @@
 import pygame
 
 from app import config
+from app.audio.player import AudioPlayer
 from app.core.settings import Settings
 from app.core.storage import SaveFile
 from app.core.world import RunRules, World
@@ -20,6 +21,7 @@ from app.scenes.shop import ShopScene
 from app.theme.accessibility import A11Y
 from app.theme.palette import PALETTE, apply_colors
 from app.ui.hud import Hud
+from app.ui.widgets import set_ui_sound
 
 
 class Game:
@@ -34,6 +36,7 @@ class Game:
     """
 
     def __init__(self, save_path=None) -> None:
+        pygame.mixer.pre_init(config.AUDIO_RATE, -16, 1, 512)   # before pygame.init: mono 16-bit, low delay
         pygame.init()
         self.screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
         pygame.display.set_caption(APP_NAME)
@@ -44,6 +47,8 @@ class Game:
         self.settings = Settings(save_file)
         self.apply_settings()                       # colors first: the background is drawn with them
         self.settings.on_change = self.apply_settings
+        self.audio = AudioPlayer(self.settings)    # synthesizes every sound once (a fraction of a second)
+        set_ui_sound(self.audio.ui)
         self.world = self.new_world()
         self.result: RunResult | None = None        # what the last banked run was worth
         self.in_run = False                         # a run has started and is not banked yet
@@ -72,6 +77,7 @@ class Game:
     def start_run(self) -> None:
         self.bank_run()
         self.world = self.new_world()
+        self.audio.play("go")
         self.result = None
         self.in_run = True
         self.scene = PlayScene(self)

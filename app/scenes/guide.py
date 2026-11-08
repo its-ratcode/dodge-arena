@@ -47,7 +47,7 @@ class GuideScene(Scene):
             button = Button(section.title, self._jump(i), size=(SIDEBAR_W, 40))
             button.rect.topleft = (LEFT, PANEL_TOP + i * 48)
             self.section_buttons.append(button)
-        back_button = Button("Back", self.go_back, hotkey="escape", size=(SIDEBAR_W, 44))
+        back_button = Button("Back", self.go_back, hotkey="escape", sound="back", size=(SIDEBAR_W, 44))
         back_button.rect.bottomleft = (LEFT, bottom)
         self.group = ButtonGroup(self.section_buttons + [back_button])
 

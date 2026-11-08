@@ -39,15 +39,15 @@ class ShopScene(Scene):
             row, col = divmod(i, COLUMNS)
             card = pygame.Rect(self.left + col * (CARD_W + CARD_GAP), GRID_TOP + row * (CARD_H + CARD_GAP),
                                CARD_W, CARD_H)
-            buy = Button(self._buy_label(upgrade), self._buy(upgrade), size=(128, 38))
+            buy = Button(self._buy_label(upgrade), self._buy(upgrade), size=(128, 38), sound="buy")
             buy.rect.bottomleft = (card.x + 16, card.bottom - 16)
-            sell = Button(self._sell_label(upgrade), self._sell(upgrade), style="label", size=(80, 38))
+            sell = Button(self._sell_label(upgrade), self._sell(upgrade), style="label", size=(80, 38), sound="sell")
             sell.rect.bottomright = (card.right - 16, card.bottom - 16)
             self.cards.append((upgrade, card, buy, sell))
             buttons += [buy, sell]
 
         bottom = config.SCREEN_HEIGHT - 26
-        back_button = Button("Back", self.go_back, hotkey="escape", size=(200, 44))
+        back_button = Button("Back", self.go_back, hotkey="escape", sound="back", size=(200, 44))
         back_button.rect.bottomleft = (self.left, bottom)
         self.refund_all = Button(lambda: "Click again to confirm" if self.confirm_timer > 0 else "Refund all",
                                  self.refund_everything, size=(260, 44))

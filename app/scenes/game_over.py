@@ -44,6 +44,8 @@ class GameOverScene(Scene):
             self.buttons.handle_event(event)
 
     def update(self, dt: float) -> None:
+        if self.age < CARD_DELAY <= self.age + dt and self.game.result and self.game.result.new_best:
+            self.game.audio.play("new_best")               # a fanfare as the card arrives
         self.age += dt
         card = self.card()
         count = len(self.buttons.buttons)

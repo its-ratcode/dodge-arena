@@ -79,6 +79,10 @@ Everything is in **Settings** and saved right away:
 |---|---|
 | Accessibility | Color modes (Deuteranopia, Protanopia, Tritanopia, High contrast), your own color for the player, bolts and lasers, threat outlines, reduce flashing, reduced motion |
 | Gameplay | Game speed (50-100%), laser warning time (100-200%), starting danger, pause on focus loss, frame rate |
+| Audio | Master and sound effect volume, menu sounds, laser audio cue (beeps and a charge-up before lasers fire) |
+
+Every sound is synthesized in code when the game starts: there are no sound files.
+Without an audio device the game simply runs silently.
 
 Runs with a slower game speed or longer laser warnings still earn coins but don't set best times.
 
