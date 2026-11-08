@@ -8,6 +8,10 @@
 A fast-paced top-down arena dodging game built with Python and pygame.
 Every shape is drawn and every sound is synthesized in code: no image or audio files.
 
+## Demo
+
+https://github.com/user-attachments/assets/b1e90ea2-38fc-4b24-97b0-cdd1e8dcd081
+
 ## About this version
 
 Dodge Arena 1.0 is a remaster of an earlier prototype of mine, a single-file pygame dodge game.
