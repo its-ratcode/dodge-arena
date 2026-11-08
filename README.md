@@ -1,8 +1,18 @@
 # Dodge Arena
 
-A fast-paced top-down arena dodging game built with Python and pygame.
+[![tests](https://github.com/its-ratcode/dodge-arena/actions/workflows/tests.yml/badge.svg)](https://github.com/its-ratcode/dodge-arena/actions/workflows/tests.yml)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+![Windows](https://img.shields.io/badge/platform-Windows-lightgrey)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-> Work in progress.
+A fast-paced top-down arena dodging game built with Python and pygame.
+Every shape is drawn and every sound is synthesized in code: no image or audio files.
+
+## About this version
+
+Dodge Arena 1.0 is a remaster of an earlier prototype of mine, a single-file pygame dodge game.
+The core idea is the same; this version rebuilds it as a structured, documented project with a new
+interface, synthesized sound and music, accessibility options, measured balance and a test suite.
 
 ## How to play
 
@@ -91,12 +101,25 @@ Runs with a slower game speed, longer laser warnings or lasers turned off still 
 
 ## Getting started
 
-Requires Python 3.10+.
+Requires Python 3.10+ on Windows. The game is designed for Windows: on macOS or Linux it runs,
+but uses different fonts, so some text may not fit exactly.
+
+Run it straight from the folder:
 
 ```bash
 pip install -r requirements.txt
 python -m app
 ```
+
+Or install it, which adds a `dodge-arena` command:
+
+```bash
+pip install .
+dodge-arena
+```
+
+Your progress and settings are saved in `%APPDATA%\Dodge Arena\save.json`. Delete that file to start over.
+See [CHANGELOG.md](CHANGELOG.md) for what each version contains.
 
 ## Controls
 
@@ -137,3 +160,9 @@ Each test uses its own temporary save file and never touches your progress.
 | `tests/test_storage.py` | The save file: missing, broken, and safe writes |
 | `tests/test_scenes.py` | Menus, pause, shop, settings and guide, driven with keys and clicks |
 | `tests/test_utils.py` | Time format and collision shapes |
+
+GitHub Actions runs them on every push (see the badge at the top).
+
+## License
+
+[MIT](LICENSE) © 2026 RatCode
