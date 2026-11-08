@@ -87,7 +87,7 @@ Every sound and the music are synthesized in code when the game starts: there ar
 The soundtrack is adaptive: it gains layers (drums, arpeggio, lead) as danger rises.
 Without an audio device the game simply runs silently.
 
-Runs with a slower game speed or longer laser warnings still earn coins but don't set best times.
+Runs with a slower game speed, longer laser warnings or lasers turned off still earn coins but don't set best times.
 
 ## Getting started
 
@@ -117,3 +117,23 @@ Menus work with the mouse or the keyboard: arrows (or Tab) to choose, Enter or S
 arrow keys move between cards in the shop, and the key shown on a button triggers it directly
 (S = shop, M = main menu, Esc = back). Restart, Main menu and Quit game in the pause menu ask
 before ending your run. Leaving a run early still banks the coins you picked up.
+
+## Running the tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+The tests run in a hidden window with no sound, so they also work on a server without a screen.
+Each test uses its own temporary save file and never touches your progress.
+
+| File | What it checks |
+|---|---|
+| `tests/test_world.py` | Hits, Shield, Second Wind, walls, lasers, close calls, coins, danger, power-ups |
+| `tests/test_skills.py` | Cooldowns, Ability Haste, Blink and Dash distances, tooltip numbers |
+| `tests/test_progression.py` | Upgrade prices, refunds, best times, and the balance rules |
+| `tests/test_settings.py` | Defaults, saving, key rebinding, cleaning up hand-edited files |
+| `tests/test_storage.py` | The save file: missing, broken, and safe writes |
+| `tests/test_scenes.py` | Menus, pause, shop, settings and guide, driven with keys and clicks |
+| `tests/test_utils.py` | Time format and collision shapes |
