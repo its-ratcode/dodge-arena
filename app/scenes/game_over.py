@@ -7,13 +7,13 @@ from app.render.icons import draw_icon
 from app.render.text import draw_text, text_size
 from app.scenes.base import Scene, card_rect, dim, draw_card, ease_out
 from app.theme.palette import PALETTE
-from app.theme.styles import BUTTON_HEIGHT, CARD_PAD
+from app.theme.styles import BUTTON_GAP, BUTTON_HEIGHT, CARD_PAD
 from app.ui.widgets import Button, ButtonList
 from app.util.timefmt import fmt_time
 
 CARD_DELAY = 0.45       # s the moment of death stays visible before the card appears
 CARD_SLIDE = 0.3        # s for the card to slide into place
-CARD_SIZE = (440, 430)
+CARD_SIZE = (440, 490)
 
 
 class GameOverScene(Scene):
@@ -25,6 +25,7 @@ class GameOverScene(Scene):
         self.age = 0.0
         self.buttons = ButtonList([
             Button("Play again", game.start_run, hotkey="r", primary=True),
+            Button("Shop", game.open_shop, hotkey="s"),
             Button("Main menu", game.open_main_menu, hotkey="escape"),
         ], center=(0, 0))
 
@@ -43,7 +44,9 @@ class GameOverScene(Scene):
     def update(self, dt: float) -> None:
         self.age += dt
         card = self.card()
-        self.buttons.layout((card.centerx, card.bottom - CARD_PAD - (BUTTON_HEIGHT * 2 + 12) // 2))
+        count = len(self.buttons.buttons)
+        stack = BUTTON_HEIGHT * count + BUTTON_GAP * (count - 1)      # height of the button column
+        self.buttons.layout((card.centerx, card.bottom - CARD_PAD - stack // 2))
         self.buttons.update(dt)
 
     def draw(self, surface: pygame.Surface) -> None:

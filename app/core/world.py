@@ -31,17 +31,18 @@ class World:
     ends the run.
     """
 
-    def __init__(self, stats: RunStats | None = None) -> None:
+    def __init__(self, stats: RunStats | None = None, keybinds: dict[str, str] | None = None) -> None:
         self.stats = stats or RunStats()
+        keybinds = keybinds if keybinds is not None else dict(config.DEFAULT_KEYBINDS)
         self.player = Player((config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2), self.stats.player_speed)
-        self.loadout = build_loadout(self.stats.cooldown_mult)
+        self.loadout = build_loadout(keybinds, self.stats.cooldown_mult)
         self.second_wind = (SecondWind(self.stats.second_wind_cooldown)
                             if self.stats.second_wind_cooldown is not None else None)
         # Power-ups: at most one on the map and one held.
         self.pickup: PowerUpPickup | None = None
         self.pickup_timer = config.POWERUP_FIRST_DELAY
         self.last_pickup_kind: type[PowerUp] | None = None
-        self.powerup_slot = SkillSlot(config.POWERUP_KEY, None)
+        self.powerup_slot = SkillSlot("powerup", None, keybinds)
         self.powerup_hold = 0.0                # s before the held power-up expires
         self.time_warp_remaining = 0.0
         self.coin_rush_remaining = 0.0

@@ -6,6 +6,7 @@ import pygame
 from pygame.math import Vector2
 
 from app import config
+from app.core.settings import MOVE_BUTTONS
 from app.entities.bolt import Bolt
 from app.meta import APP_NAME, VERSION
 from app.render.icons import draw_icon
@@ -14,12 +15,11 @@ from app.render.text import draw_text, text_size
 from app.scenes.base import Scene, dim
 from app.theme.palette import PALETTE
 from app.ui.widgets import Button, ButtonList
+from app.util.keys import key_label
 from app.util.timefmt import fmt_time
 
 DEMO_BOLT_INTERVAL = 0.45      # s between decorative bolts crossing the background
 DEMO_BOLT_SPEED = 260          # px/s
-CONTROLS_HINT = ("Right-click move   |   Q W E abilities   |   D F utility spells   |   "
-                 "Space power-up   |   Esc pause")
 
 
 class MainMenuScene(Scene):
@@ -32,8 +32,18 @@ class MainMenuScene(Scene):
         self.bolt_timer = 0.0
         self.buttons = ButtonList([
             Button("Play", game.start_run, primary=True),
+            Button("Shop", game.open_shop, hotkey="s"),
+            Button("Settings", game.open_settings),
             Button("Quit", game.quit, hotkey="escape"),
-        ], center=(config.SCREEN_WIDTH // 2, 450))
+        ], center=(config.SCREEN_WIDTH // 2, 480))
+
+    def controls_hint(self) -> str:
+        """The controls line at the bottom, built from the player's current bindings."""
+        s = self.game.settings
+        keys = {action: key_label(name) for action, name in s.keybinds.items()}
+        return (f"{MOVE_BUTTONS[s.move_button]} move   |   {keys['shield']} {keys['wall']} {keys['dash']} abilities"
+                f"   |   {keys['sprint']} {keys['blink']} utility spells   |   {keys['powerup']} power-up"
+                f"   |   {keys['pause']} pause")
 
     def handle_event(self, event: pygame.event.Event) -> None:
         self.buttons.handle_event(event)
@@ -66,14 +76,14 @@ class MainMenuScene(Scene):
         dim(surface, 140)
         cx = config.SCREEN_WIDTH // 2
 
-        draw_glow(surface, PALETTE.accent, (cx, 175), 260, 45)
-        draw_text(surface, APP_NAME.upper(), "title", PALETTE.text, shadow=True, center=(cx, 170))
+        draw_glow(surface, PALETTE.accent, (cx, 145), 260, 45)
+        draw_text(surface, APP_NAME.upper(), "title", PALETTE.text, shadow=True, center=(cx, 140))
         draw_text(surface, "Dodge the bolts. Outlast the lasers. Survive.", "subtitle", PALETTE.text_dim,
-                  center=(cx, 228))
-        self.draw_records(surface, cx, 300)
+                  center=(cx, 198))
+        self.draw_records(surface, cx, 250)
         self.buttons.draw(surface)
 
-        draw_text(surface, CONTROLS_HINT, "small", PALETTE.text_faint, midbottom=(cx, config.SCREEN_HEIGHT - 20))
+        draw_text(surface, self.controls_hint(), "small", PALETTE.text_faint, midbottom=(cx, config.SCREEN_HEIGHT - 20))
         draw_text(surface, f"v{VERSION}", "tiny", PALETTE.text_faint,
                   bottomright=(config.SCREEN_WIDTH - 14, config.SCREEN_HEIGHT - 20))
 

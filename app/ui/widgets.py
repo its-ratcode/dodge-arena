@@ -1,91 +1,179 @@
-"""Interface widgets: buttons and a vertical button list that works with mouse and keyboard."""
+"""Interface widgets: buttons, settings rows, and groups that work with mouse and keyboard."""
 
 from collections.abc import Callable
 
 import pygame
+from pygame.math import Vector2
 
+from app.render.icons import draw_icon
 from app.render.shapes import draw_glow, draw_panel
-from app.render.text import draw_keycap, draw_text
+from app.render.text import draw_keycap, draw_text, text_size
 from app.theme.palette import PALETTE
 from app.theme.styles import BUTTON_GAP, BUTTON_HEIGHT, BUTTON_WIDTH, PANEL_STYLES
-from app.util.mathx import lerp_color
-
-KEY_LABELS = {"escape": "ESC", "return": "ENTER"}      # short labels for long pygame key names
-
-
-def key_label(key_name: str) -> str:
-    """How a pygame key name is shown on a keycap: "escape" -> "ESC", "r" -> "R"."""
-    return KEY_LABELS.get(key_name, key_name.upper())
+from app.util.keys import key_label
+from app.util.mathx import Color, lerp_color
 
 
 class Button:
-    """A clickable box with a label and an optional hotkey shown as a keycap.
+    """A clickable box with a label, an optional icon and an optional hotkey keycap.
 
     ``primary`` buttons use the accent color for the main action of a screen.
-    ``highlight`` eases between 0 and 1 so hovering fades in instead of popping.
+    A disabled button can still be focused but does nothing. ``highlight``
+    eases between 0 and 1 so hovering fades in instead of popping.
     """
 
-    def __init__(self, label: str, action: Callable[[], None], hotkey: str | None = None,
-                 primary: bool = False) -> None:
-        self.label = label
+    def __init__(self, label: str | Callable[[], str], action: Callable[[], None], hotkey: str | None = None,
+                 primary: bool = False, icon: str | None = None, style: str = "button",
+                 size: tuple[int, int] = (BUTTON_WIDTH, BUTTON_HEIGHT)) -> None:
+        self._label = label                 # a string, or a function for labels that change (prices)
         self.action = action
         self.hotkey = hotkey
         self.hotkey_code = pygame.key.key_code(hotkey) if hotkey else None
         self.primary = primary
-        self.rect = pygame.Rect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT)
+        self.icon = icon
+        self.style = style
+        self.enabled = True
+        self.rect = pygame.Rect((0, 0), size)
         self.highlight = 0.0
         self.pressed = False
+
+    @property
+    def label(self) -> str:
+        return self._label() if callable(self._label) else self._label
+
+    def activate(self) -> None:
+        if self.enabled:
+            self.action()
 
     def update(self, dt: float, focused: bool) -> None:
         target = 1.0 if focused else 0.0
         step = dt * 10
         self.highlight += max(-step, min(step, target - self.highlight))
 
-    def draw(self, surface: pygame.Surface) -> None:
+    # --- Drawing ---------------------------------------------------------------------------
+    def accent(self) -> Color:
+        return PALETTE.accent if self.primary else PALETTE.text_dim
+
+    def draw_frame(self, surface: pygame.Surface) -> pygame.Rect:
+        """Glow, panel and border; returns the rect to draw the content in."""
         rect = self.rect.move(0, 2) if self.pressed else self.rect      # sinks while held down
-        accent = PALETTE.accent if self.primary else PALETTE.text_dim
-        h = self.highlight
+        h = self.highlight if self.enabled else self.highlight * 0.4
         if h > 0:
-            draw_glow(surface, accent, rect.center, rect.width * 0.45, int(70 * h))
+            draw_glow(surface, self.accent(), rect.center, rect.width * 0.45, int(70 * h))
         draw_panel(surface, rect, "button")
-        border = lerp_color(PALETTE.accent if self.primary else PALETTE.line, PALETTE.text, h * 0.6)
-        pygame.draw.rect(surface, border, rect, 2 if self.primary or h > 0.5 else 1,
+        base = PALETTE.accent if self.primary and self.enabled else PALETTE.line
+        pygame.draw.rect(surface, lerp_color(base, PALETTE.text, h * 0.6), rect, 2 if self.primary or h > 0.5 else 1,
                          border_radius=PANEL_STYLES["button"].radius)
-        text_color = lerp_color(accent if self.primary else PALETTE.text_dim, PALETTE.text, h)
-        draw_text(surface, self.label, "button", text_color, shadow=True, center=rect.center)
+        return rect
+
+    def text_color(self) -> Color:
+        if not self.enabled:
+            return PALETTE.text_faint
+        return lerp_color(self.accent(), PALETTE.text, self.highlight)
+
+    def draw(self, surface: pygame.Surface) -> None:
+        rect = self.draw_frame(surface)
+        label, color = self.label, self.text_color()
+        if self.icon:
+            # Icon and label centered together as one row.
+            width = 22 + text_size(label, self.style)[0]
+            left = rect.centerx - width // 2
+            draw_icon(surface, self.icon, (left + 8, rect.centery), 18, color)
+            draw_text(surface, label, self.style, color, shadow=True, midleft=(left + 22, rect.centery))
+        else:
+            draw_text(surface, label, self.style, color, shadow=True, center=rect.center)
         if self.hotkey:
             draw_keycap(surface, key_label(self.hotkey), midright=(rect.right - 12, rect.centery))
 
 
-class ButtonList:
-    """Buttons stacked vertically and centered on ``center``.
+# --- Settings rows ---------------------------------------------------------------------------
+class SettingRow(Button):
+    """A full-width row: a label on the left, its current value on the right."""
 
-    Mouse: hover focuses, click (press and release on the same button) activates.
-    Keyboard: Up/Down or Tab move the focus, Enter or Space activates, and each
-    button's hotkey activates it directly.
+    def __init__(self, label: str, action: Callable[[], None], value: Callable[[], str],
+                 size: tuple[int, int]) -> None:
+        super().__init__(label, action, size=size)
+        self.value = value
+
+    def draw(self, surface: pygame.Surface) -> None:
+        rect = self.draw_frame(surface)
+        draw_text(surface, self.label, "button", self.text_color(), shadow=True, midleft=(rect.x + 16, rect.centery))
+        self.draw_value(surface, rect)
+
+    def draw_value(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+        draw_text(surface, f"<  {self.value()}  >", "small", PALETTE.text, midright=(rect.right - 16, rect.centery))
+
+
+class KeyBindRow(SettingRow):
+    """Shows the bound key as a keycap, or a prompt while waiting for a new key."""
+
+    def __init__(self, label: str, action: Callable[[], None], key_name: Callable[[], str],
+                 waiting: Callable[[], bool], size: tuple[int, int]) -> None:
+        super().__init__(label, action, key_name, size)
+        self.waiting = waiting
+
+    def draw_value(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+        if self.waiting():
+            draw_text(surface, "Press a key...  (Esc cancels)", "small", PALETTE.warning,
+                      midright=(rect.right - 16, rect.centery))
+        else:
+            draw_keycap(surface, key_label(self.value()), midright=(rect.right - 16, rect.centery))
+
+
+class ToggleRow(SettingRow):
+    """An on/off switch."""
+
+    def __init__(self, label: str, action: Callable[[], None], is_on: Callable[[], bool],
+                 size: tuple[int, int]) -> None:
+        super().__init__(label, action, lambda: "On" if is_on() else "Off", size)
+        self.is_on = is_on
+
+    def draw_value(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
+        track = pygame.Rect(0, 0, 44, 22)
+        track.midright = (rect.right - 16, rect.centery)
+        on = self.is_on()
+        pygame.draw.rect(surface, PALETTE.accent if on else PALETTE.track, track, border_radius=11)
+        knob_x = track.right - 11 if on else track.left + 11
+        pygame.draw.circle(surface, PALETTE.text if on else PALETTE.text_dim, (knob_x, track.centery), 8)
+
+
+# --- Groups ---------------------------------------------------------------------------------
+DIRECTIONS = {pygame.K_UP: Vector2(0, -1), pygame.K_DOWN: Vector2(0, 1),
+              pygame.K_LEFT: Vector2(-1, 0), pygame.K_RIGHT: Vector2(1, 0)}
+
+
+class ButtonGroup:
+    """Widgets placed anywhere on screen, sharing one keyboard focus.
+
+    Mouse: hover focuses, click (press and release on the same widget) activates.
+    Keyboard: the arrow keys move the focus to the nearest widget in that
+    direction (so grids work too), Tab cycles in order, Enter or Space
+    activates, and a widget's hotkey activates it directly.
     """
 
-    def __init__(self, buttons: list[Button], center: tuple[int, int]) -> None:
+    def __init__(self, buttons: list[Button]) -> None:
         self.buttons = buttons
         self.focus = 0
-        self.layout(center)
-
-    def layout(self, center: tuple[int, int]) -> None:
-        total = len(self.buttons) * BUTTON_HEIGHT + (len(self.buttons) - 1) * BUTTON_GAP
-        y = center[1] - total // 2
-        for button in self.buttons:
-            button.rect.midtop = (center[0], y)
-            y += BUTTON_HEIGHT + BUTTON_GAP
-
-    @property
-    def bounds(self) -> pygame.Rect:
-        return self.buttons[0].rect.unionall([b.rect for b in self.buttons[1:]])
 
     def _button_at(self, pos) -> int | None:
         for i, button in enumerate(self.buttons):
             if button.rect.collidepoint(pos):
                 return i
         return None
+
+    def _nearest(self, direction: Vector2) -> int | None:
+        """The closest widget whose center lies in ``direction``; sideways distance counts double."""
+        here = Vector2(self.buttons[self.focus].rect.center)
+        best, best_score = None, float("inf")
+        for i, button in enumerate(self.buttons):
+            offset = Vector2(button.rect.center) - here
+            ahead = offset.dot(direction)
+            if i == self.focus or ahead <= 0:
+                continue
+            score = ahead + 2 * abs(offset.cross(direction))
+            if score < best_score:
+                best, best_score = i, score
+        return best
 
     def handle_event(self, event: pygame.event.Event) -> bool:
         """Returns True if the event was used (so the screen can ignore it)."""
@@ -105,21 +193,24 @@ class ButtonList:
             for button in self.buttons:
                 button.pressed = False
             if was_pressed:
-                self.buttons[index].action()
+                self.buttons[index].activate()
                 return True
         elif event.type == pygame.KEYDOWN:
             for button in self.buttons:
-                if event.key == button.hotkey_code:
-                    button.action()
+                if button.hotkey_code is not None and event.key == button.hotkey_code:
+                    button.activate()
                     return True
-            if event.key in (pygame.K_DOWN, pygame.K_TAB):
-                self.focus = (self.focus + 1) % len(self.buttons)
+            if event.key in DIRECTIONS:
+                index = self._nearest(DIRECTIONS[event.key])
+                if index is not None:
+                    self.focus = index
                 return True
-            if event.key == pygame.K_UP:
-                self.focus = (self.focus - 1) % len(self.buttons)
+            if event.key == pygame.K_TAB:
+                step = -1 if event.mod & pygame.KMOD_SHIFT else 1
+                self.focus = (self.focus + step) % len(self.buttons)
                 return True
             if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
-                self.buttons[self.focus].action()
+                self.buttons[self.focus].activate()
                 return True
         return False
 
@@ -130,3 +221,25 @@ class ButtonList:
     def draw(self, surface: pygame.Surface) -> None:
         for button in self.buttons:
             button.draw(surface)
+
+
+class ButtonList(ButtonGroup):
+    """Buttons stacked vertically and centered on ``center``. Up/Down wrap around at the ends."""
+
+    def __init__(self, buttons: list[Button], center: tuple[int, int]) -> None:
+        super().__init__(buttons)
+        self.layout(center)
+
+    def layout(self, center: tuple[int, int]) -> None:
+        total = len(self.buttons) * BUTTON_HEIGHT + (len(self.buttons) - 1) * BUTTON_GAP
+        y = center[1] - total // 2
+        for button in self.buttons:
+            button.rect.midtop = (center[0], y)
+            y += BUTTON_HEIGHT + BUTTON_GAP
+
+    def handle_event(self, event: pygame.event.Event) -> bool:
+        if event.type == pygame.KEYDOWN and event.key in (pygame.K_UP, pygame.K_DOWN):
+            step = 1 if event.key == pygame.K_DOWN else -1
+            self.focus = (self.focus + step) % len(self.buttons)
+            return True
+        return super().handle_event(event)

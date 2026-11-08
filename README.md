@@ -46,7 +46,8 @@ Walk over it to pick it up, then press Space to use it. It has one use and expir
 Coins appear around the arena and vanish after 8 s (they blink first). Big coins are worth 5.
 At the end of a run you also get 1 coin for every 5 s you survived.
 
-Coins buy permanent upgrades, and selling one refunds exactly what it cost:
+Spend coins in the **Shop** (from the main menu or the game over screen) on permanent upgrades.
+Selling a level refunds exactly what it cost, and "Refund all" resets your build:
 
 | Upgrade | Per level | Max |
 |---|---|---|
@@ -59,7 +60,7 @@ Coins buy permanent upgrades, and selling one refunds exactly what it cost:
 | Coin Magnet | +40 px coin pull radius | 4 |
 | Second Wind | Survive one fatal hit, then 1.5 s untouchable. Recharges in 120 s, 30 s less per extra level | 3 |
 
-Progress is saved to `save.json` in your user data folder. Delete it to start over:
+Progress and settings are saved to `save.json` in your user data folder. Delete it to start over:
 
 | OS | Folder |
 |---|---|
@@ -78,6 +79,9 @@ python -m app
 
 ## Controls
 
+These are the defaults. Every key and the move button can be changed in **Settings**
+(click a control, then press the new key; a key already in use swaps places with it).
+
 | Input | Action |
 |---|---|
 | Right-click | Walk to the clicked point |
@@ -87,6 +91,7 @@ python -m app
 | Space | Use the held power-up |
 | Esc | Pause / resume (the game also pauses when its window loses focus) |
 
-Menus work with the mouse or the keyboard: Up / Down (or Tab) to choose, Enter or Space to confirm,
-and the key shown on a button triggers it directly (R = play again / restart, M = main menu).
+Menus work with the mouse or the keyboard: arrows (or Tab) to choose, Enter or Space to confirm,
+arrow keys move between cards in the shop, and the key shown on a button triggers it directly
+(R = play again / restart, S = shop, M = main menu, Esc = back).
 Leaving a run early still banks the coins you picked up.

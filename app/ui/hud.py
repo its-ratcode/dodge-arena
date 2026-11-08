@@ -3,6 +3,7 @@
 Layout:
     top center      timer pill, danger bar
     top right       coins picked up this run
+    top left        frame rate, if "Show frame rate" is on
     bottom center   ability bar (abilities | utility spells | power-up), key labels under the boxes
     left of bar     active effects (stasis, shield, sprint ...) with the time they have left
     right of bar    Second Wind, if owned: ready, or recharging
@@ -34,9 +35,12 @@ if TYPE_CHECKING:                       # the HUD only reads a World; it never c
 class Hud:
     """Draws the HUD for a World. Holds no game state of its own."""
 
-    def draw(self, surface: pygame.Surface, world: World) -> None:
+    def draw(self, surface: pygame.Surface, world: World, fps: float | None = None) -> None:
         self.draw_timer(surface, world)
         self.draw_coins(surface, world)
+        if fps is not None:
+            draw_text(surface, f"{fps:.0f} FPS", "label", PALETTE.text_faint, shadow=True,
+                      topleft=(HUD_MARGIN + 4, HUD_MARGIN + 4))
         slots = [*world.loadout, world.powerup_slot]
         groups = self.slot_groups(world)
         bar, rects = self.bar_layout(groups)

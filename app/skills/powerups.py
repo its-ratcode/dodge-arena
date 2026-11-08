@@ -1,4 +1,4 @@
-"""Power-ups: one-use spells picked up from the map and cast with ``POWERUP_KEY``.
+"""Power-ups: one-use spells picked up from the map and cast with the "powerup" key.
 
 To add one: subclass ``PowerUp``, pick an icon and a palette color, implement
 ``cast``, and add the class to ``POWERUP_POOL``.

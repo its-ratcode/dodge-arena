@@ -4,6 +4,8 @@ Each icon is designed in a box from -1 to 1 on both axes and scaled to
 ``size`` px, so it stays sharp at any size and takes any color.
 """
 
+import math
+
 import pygame
 
 from app.theme.palette import PALETTE
@@ -91,6 +93,28 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
         pygame.draw.polygon(surface, color, [p(-0.69, -0.18), p(0.69, -0.18), p(0, 0.82)])
         pygame.draw.line(surface, PALETTE.panel_bottom, p(-0.24, -0.08), p(0.24, -0.08), max(1, w - 1))
         pygame.draw.line(surface, PALETTE.panel_bottom, p(0, -0.32), p(0, 0.16), max(1, w - 1))
+    elif name == "boots":
+        # A boot with two speed lines behind it.
+        pygame.draw.polygon(surface, color, [p(-0.3, -0.85), p(0.2, -0.85), p(0.2, 0.15), p(0.85, 0.35),
+                                             p(0.85, 0.75), p(-0.3, 0.75)])
+        for y in (-0.35, 0.15):
+            pygame.draw.line(surface, color, p(-0.95, y), p(-0.5, y), w)
+    elif name == "haste":
+        # A circular arrow: an open ring with an arrowhead at its end.
+        ring = pygame.Rect(0, 0, 1.5 * s, 1.5 * s)
+        ring.center = (round(cx), round(cy))
+        pygame.draw.arc(surface, color, ring, math.radians(-30), math.radians(240), w + 1)
+        pygame.draw.polygon(surface, color, [p(0.42, -0.05), p(0.95, -0.05), p(0.68, 0.42)])
+    elif name == "magnet":
+        # A horseshoe magnet: two legs joined by a curved bottom, with light tips.
+        thick = max(3, round(s * 0.34))
+        bend = pygame.Rect(0, 0, 1.5 * s, 1.5 * s)
+        bend.center = (round(cx), round(cy + 0.05 * s))
+        pygame.draw.arc(surface, color, bend, math.pi, math.tau, thick)        # the bottom half circle
+        for x in (-0.75, 0.75 - thick / s):
+            leg = pygame.Rect(round(cx + x * s), round(cy - 0.85 * s), thick, round(0.92 * s))
+            pygame.draw.rect(surface, color, leg)
+            pygame.draw.rect(surface, PALETTE.text, (leg.x, leg.y, thick, round(0.3 * s)))   # the tip
     elif name == "empty":
         # A dashed diamond: an empty power-up slot.
         corners = [p(0, -0.7), p(0.7, 0), p(0, 0.7), p(-0.7, 0)]
@@ -102,5 +126,5 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
 
 
 ICON_NAMES = ("shield", "wall", "dash", "sprint", "blink", "coin", "coin_rush", "stasis", "time_warp", "warp",
-              "nova", "second_wind", "empty")
+              "nova", "second_wind", "boots", "haste", "magnet", "empty")
 """Every icon drawn above."""

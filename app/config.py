@@ -23,8 +23,16 @@ ARENA_BORDER_INSET = 6     # px between the window edge and the arena border
 # --- Player -------------------------------------------------------------------------
 PLAYER_RADIUS = 16
 PLAYER_SPEED = 325         # px/s
-MOVE_MOUSE_BUTTON = 3      # pygame button number: 1 = left, 3 = right
-PAUSE_KEY = "escape"       # pygame key name; the game also pauses when the window loses focus
+
+# --- Controls (defaults; players change them in Settings) ----------------------------
+# Action -> pygame key name. The order here is the order of the Settings list.
+DEFAULT_KEYBINDS = {
+    "shield": "q", "wall": "w", "dash": "e",       # abilities
+    "sprint": "d", "blink": "f",                    # utility spells
+    "powerup": "space",
+    "pause": "escape",
+}
+DEFAULT_MOVE_BUTTON = 3    # pygame mouse button: 1 = left, 3 = right
 
 # --- Click marker ---------------------------------------------------------------------
 CLICK_MARKER_DURATION = 0.4    # s
@@ -60,8 +68,6 @@ LASER_WIDTH = 46               # px
 LASER_LENGTH = 2 * math.hypot(SCREEN_WIDTH, SCREEN_HEIGHT) + 200   # always spans the arena
 
 # --- Abilities ----------------------------------------------------------------------------
-ABILITY_KEYS = ("q", "w", "e")     # pygame key names, in ability bar order (Shield, Wall, Dash)
-
 SHIELD_COOLDOWN = 12.0         # s
 SHIELD_DURATION = 1.5          # s the bubble lasts if nothing hits it
 SHIELD_RADIUS = PLAYER_RADIUS + 10     # px; while shielded, the bubble is your hitbox
@@ -78,8 +84,6 @@ DASH_RANGE = 200               # px
 DASH_SPEED = 1400              # px/s; you travel the distance, so you can be hit mid-dash
 
 # --- Utility spells (long cooldowns, for emergencies) ---------------------------------------
-UTILITY_KEYS = ("d", "f")      # pygame key names, in ability bar order (Sprint, Blink)
-
 SPRINT_COOLDOWN = 20.0         # s
 SPRINT_DURATION = 3.0          # s
 SPRINT_MULTIPLIER = 1.5        # x movement speed
@@ -88,7 +92,6 @@ BLINK_COOLDOWN = 25.0
 BLINK_RANGE = 160              # px; a closer cursor means a shorter blink
 
 # --- Power-ups (one-use pickups) ----------------------------------------------------------------
-POWERUP_KEY = "space"          # pygame key name that uses the held power-up
 POWERUP_FIRST_DELAY = 12.0     # s into a run before the first pickup appears
 POWERUP_RESPAWN_MIN = 6.0      # s after one is taken or expires before the next appears
 POWERUP_RESPAWN_MAX = 10.0
