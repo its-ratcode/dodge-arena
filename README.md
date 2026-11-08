@@ -6,6 +6,9 @@ A fast-paced top-down arena dodging game built with Python and pygame.
 
 ## How to play
 
+The full guide is in the game: **How to play** on the main menu or the pause menu (key H).
+It always shows your current keys and the game's real numbers.
+
 Bolts fly in from every edge, each one aimed at where you stood when it appeared.
 Lasers sweep across the whole arena: a pink lane warns you first, then the beam fires.
 Keep moving: one hit ends the run. Survive as long as you can.

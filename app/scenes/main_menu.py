@@ -32,6 +32,7 @@ class MainMenuScene(Scene):
         self.bolt_timer = 0.0
         self.buttons = ButtonList([
             Button("Play", game.start_run, primary=True),
+            Button("How to play", game.open_guide, hotkey="h"),
             Button("Shop", game.open_shop, hotkey="s"),
             Button("Settings", game.open_settings),
             Button("Quit", game.quit, hotkey="escape"),

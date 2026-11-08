@@ -11,6 +11,7 @@ from app.progression.profile import Profile, RunResult
 from app.render.arena import build_arena_background
 from app.scenes.base import Scene
 from app.scenes.game_over import GameOverScene
+from app.scenes.guide import GuideScene
 from app.scenes.main_menu import MainMenuScene
 from app.scenes.pause import PauseScene
 from app.scenes.play import PlayScene
@@ -78,6 +79,9 @@ class Game:
 
     def open_settings(self) -> None:
         self.scene = SettingsScene(self, back=self.scene)
+
+    def open_guide(self) -> None:
+        self.scene = GuideScene(self, back=self.scene)
 
     def quit(self) -> None:
         self.bank_run()

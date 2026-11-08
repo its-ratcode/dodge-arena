@@ -115,6 +115,19 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
             leg = pygame.Rect(round(cx + x * s), round(cy - 0.85 * s), thick, round(0.92 * s))
             pygame.draw.rect(surface, color, leg)
             pygame.draw.rect(surface, PALETTE.text, (leg.x, leg.y, thick, round(0.3 * s)))   # the tip
+    elif name == "bolt":
+        # A tilted bolt with a bright leading edge.
+        d = pygame.math.Vector2(1, -1).normalize()
+        n = pygame.math.Vector2(-d.y, d.x)
+        body = [p(*(d * along + n * side)) for along, side in ((0.85, 0.3), (0.85, -0.3), (-0.85, -0.3), (-0.85, 0.3))]
+        pygame.draw.polygon(surface, color, body)
+        pygame.draw.line(surface, PALETTE.text, body[0], body[1], w)
+    elif name == "laser":
+        # A beam across the box, with dashed warning lanes above and below it.
+        pygame.draw.line(surface, color, p(-0.95, 0), p(0.95, 0), w + 2)
+        for y in (-0.55, 0.55):
+            for x0 in (-0.9, -0.3, 0.3):
+                pygame.draw.line(surface, color, p(x0, y), p(x0 + 0.35, y), max(1, w - 1))
     elif name == "empty":
         # A dashed diamond: an empty power-up slot.
         corners = [p(0, -0.7), p(0.7, 0), p(0, 0.7), p(-0.7, 0)]
@@ -126,5 +139,5 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
 
 
 ICON_NAMES = ("shield", "wall", "dash", "sprint", "blink", "coin", "coin_rush", "stasis", "time_warp", "warp",
-              "nova", "second_wind", "boots", "haste", "magnet", "empty")
+              "nova", "second_wind", "boots", "haste", "magnet", "bolt", "laser", "empty")
 """Every icon drawn above."""

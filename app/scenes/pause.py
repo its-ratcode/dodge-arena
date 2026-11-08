@@ -17,13 +17,14 @@ class PauseScene(Scene):
     def __init__(self, game, play: PlayScene) -> None:
         super().__init__(game)
         self.play = play
-        self.card = card_rect(BUTTON_WIDTH + CARD_PAD * 2, 390)
+        self.card = card_rect(BUTTON_WIDTH + CARD_PAD * 2, 450)
         self.buttons = ButtonList([
             Button("Resume", self.resume, hotkey=game.settings.keybinds["pause"], primary=True),
             Button("Settings", game.open_settings),
+            Button("How to play", game.open_guide, hotkey="h"),
             Button("Restart", game.start_run, hotkey="r"),
             Button("Main menu", game.open_main_menu, hotkey="m"),
-        ], center=(self.card.centerx, self.card.bottom - CARD_PAD - 114))
+        ], center=(self.card.centerx, self.card.bottom - CARD_PAD - 144))
 
     def resume(self) -> None:
         self.game.scene = self.play

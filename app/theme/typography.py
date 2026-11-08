@@ -26,6 +26,7 @@ TEXT_STYLES: dict[str, TextStyle] = {
     "subtitle": TextStyle(FONT_BODY, 24),
     "button":   TextStyle(FONT_DISPLAY, 18, True),
     "small":    TextStyle(FONT_BODY, 15),
+    "body":     TextStyle(FONT_BODY, 17),               # paragraphs in the guide
     "timer":    TextStyle(FONT_DISPLAY, 28, True),
     "cooldown": TextStyle(FONT_DISPLAY, 22, True),
     "label":    TextStyle(FONT_DISPLAY, 13, True),

@@ -154,7 +154,8 @@ class ShopScene(Scene):
         icon_center = (card.x + 40, card.y + 42)
         pygame.draw.circle(surface, PALETTE.panel_bottom, icon_center, 24)
         pygame.draw.circle(surface, color if level else PALETTE.line, icon_center, 24, 2)
-        draw_icon(surface, upgrade.icon, icon_center, 28, color if level else lerp_color(color, PALETTE.text_faint, 0.5))
+        icon_color = color if level else lerp_color(color, PALETTE.text_faint, 0.5)     # dim until owned
+        draw_icon(surface, upgrade.icon, icon_center, 28, icon_color)
         draw_text(surface, upgrade.name, "button", PALETTE.text, shadow=True, topleft=(card.x + 76, card.y + 20))
         for i in range(upgrade.max_level):
             pip = pygame.Rect(card.x + 76 + i * 20, card.y + 50, 16, 6)

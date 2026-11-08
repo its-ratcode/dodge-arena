@@ -22,6 +22,28 @@ def text_size(text: str, style: str) -> tuple[int, int]:
     return get_font(style).size(text)
 
 
+def line_height(style: str) -> int:
+    return get_font(style).get_linesize()
+
+
+def wrap_text(text: str, style: str, width: int) -> list[str]:
+    """Split ``text`` into lines no wider than ``width`` px, breaking between words.
+    A single word longer than the width gets a line of its own."""
+    font = get_font(style)
+    lines: list[str] = []
+    line = ""
+    for word in text.split():
+        trial = f"{line} {word}" if line else word
+        if font.size(trial)[0] <= width or not line:
+            line = trial
+        else:
+            lines.append(line)
+            line = word
+    if line:
+        lines.append(line)
+    return lines
+
+
 def draw_text(surface: pygame.Surface, text: str, style: str, color: Color,
               shadow: bool = False, **anchor) -> pygame.Rect:
     """Draw text positioned by any pygame.Rect anchor, e.g. ``center=(x, y)``.
