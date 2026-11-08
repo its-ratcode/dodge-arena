@@ -11,13 +11,15 @@ from app.meta import APP_NAME, VERSION
 from app.progression.upgrades import UPGRADES, second_wind_cooldown
 from app.render.icons import draw_icon
 from app.render.shapes import draw_glow, draw_panel
-from app.render.text import draw_hint_row, draw_text, line_height, wrap_text
+from app.render.text import (draw_hint_row, draw_spaced, draw_text, line_height, render_glow, render_gradient,
+                             wrap_text)
 from app.scenes.base import Scene, dim
 from app.theme.accessibility import A11Y
 from app.theme.palette import PALETTE
 from app.theme.styles import BUTTON_WIDTH
 from app.ui.guide_content import tips
 from app.ui.widgets import Button, ButtonList
+from app.util.mathx import lerp_color
 from app.util.timefmt import fmt_time
 
 DEMO_BOLT_INTERVAL = 0.45      # s between decorative bolts crossing the background
@@ -76,10 +78,10 @@ class MainMenuScene(Scene):
         dim(surface, 140)
 
         draw_glow(surface, PALETTE.accent, (LEFT + 150, 160), 230, 40)
-        title = draw_text(surface, APP_NAME.upper(), "title", PALETTE.text, shadow=True, topleft=(LEFT, 112))
-        pygame.draw.rect(surface, PALETTE.accent, (LEFT + 4, title.bottom + 6, 64, 3), border_radius=2)
+        bottom = self.draw_logo(surface)
+        pygame.draw.rect(surface, PALETTE.accent, (LEFT + 4, bottom + 10, 64, 3), border_radius=2)
         draw_text(surface, "Dodge the bolts. Outlast the lasers. Survive.", "small", PALETTE.text_dim,
-                  topleft=(LEFT + 4, title.bottom + 18))
+                  topleft=(LEFT + 4, bottom + 22))
         self.buttons.draw(surface)
         self.draw_profile(surface)
 
@@ -88,11 +90,29 @@ class MainMenuScene(Scene):
         draw_text(surface, f"v{VERSION}", "tiny", PALETTE.text_faint,
                   bottomright=(config.SCREEN_WIDTH - 24, config.SCREEN_HEIGHT - 20))
 
+    @staticmethod
+    def draw_logo(surface: pygame.Surface) -> int:
+        """The game's name: the first word big, with a gradient and a glow, the rest letter-spaced under it.
+        Returns the y of its bottom edge."""
+        first, _, rest = APP_NAME.upper().partition(" ")
+        # White fading to ice: lighter than the cyan buttons, so the name stands on its own.
+        logo = render_gradient(first, "logo", PALETTE.text, lerp_color(PALETTE.accent, PALETTE.text, 0.45))
+        shadow = render_gradient(first, "logo", PALETTE.key_shadow, PALETTE.key_shadow)
+        glow = render_glow(first, "logo", PALETTE.accent)
+        rect = logo.get_rect(topleft=(LEFT - 4, 86))
+        glow.set_alpha(120)
+        surface.blit(glow, glow.get_rect(center=rect.center))
+        surface.blit(shadow, rect.move(3, 4))
+        surface.blit(logo, rect)
+        if not rest:
+            return rect.bottom
+        return draw_spaced(surface, rest, "timer", PALETTE.accent, 14, topleft=(LEFT + 2, rect.bottom - 8)).bottom
+
     def draw_profile(self, surface: pygame.Surface) -> None:
         """Coins, best time, upgrades owned, Second Wind, and a tip."""
         profile = self.game.profile
         draw_panel(surface, CARD, "frame")
-        draw_text(surface, "PROFILE", "label", PALETTE.accent, topleft=(CARD.x + 26, CARD.y + 24))
+        draw_spaced(surface, "PROFILE", "label", PALETTE.accent, 4, topleft=(CARD.x + 26, CARD.y + 24))
         owned = sum(profile.levels.values())
         total = sum(u.max_level for u in UPGRADES)
         wind = second_wind_cooldown(profile.level("second_wind"))
@@ -112,7 +132,7 @@ class MainMenuScene(Scene):
             draw_text(surface, value, "button", value_color, midright=(CARD.right - 26, y + 18))
             pygame.draw.line(surface, PALETTE.border, (CARD.x + 24, y + 40), (CARD.right - 24, y + 40))
             y += 48
-        draw_text(surface, "TIP", "label", PALETTE.accent, topleft=(CARD.x + 26, y + 14))
+        draw_spaced(surface, "TIP", "label", PALETTE.accent, 4, topleft=(CARD.x + 26, y + 14))
         step = line_height("small")
         for i, line in enumerate(wrap_text(self.tip, "small", CARD.width - 52)[:3]):
             draw_text(surface, line, "small", PALETTE.text_dim, topleft=(CARD.x + 26, y + 34 + i * step))

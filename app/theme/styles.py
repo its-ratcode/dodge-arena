@@ -18,13 +18,14 @@ class PanelStyle:
     top: str = "panel_top"
     bottom: str = "panel_bottom"
     border: str = "line"
+    finish: bool = False            # a lit accent top edge and a fine inner line (the big containers)
 
 
 PANEL_STYLES: dict[str, PanelStyle] = {
-    "frame": PanelStyle(radius=RADIUS_LG, shadow=22),        # big containers (the ability bar)
+    "frame": PanelStyle(radius=RADIUS_LG, shadow=22, finish=True),     # big containers (the ability bar)
     "chip": PanelStyle(radius=RADIUS_MD, shadow=8, border="border"),   # small pills (the timer)
     "slot": PanelStyle(radius=RADIUS_MD, shadow=0, border="border"),   # one ability box
-    "card": PanelStyle(radius=RADIUS_LG, shadow=30),         # the centered box of a menu screen
+    "card": PanelStyle(radius=RADIUS_LG, shadow=30, finish=True),      # the centered box of a menu screen
     "button": PanelStyle(radius=RADIUS_MD, shadow=6),
 }
 

@@ -62,12 +62,15 @@ class Game:
         self.in_run = False                         # a run has started and is not banked yet
         self.scene: Scene = MainMenuScene(self)
         self.running = True
+        self.drawn_scene: Scene | None = None          # the scene drawn last frame
+        self.fade_from: pygame.Surface | None = None   # its last frame, fading out after a scene change
+        self.fade_time = 0.0
 
     def apply_settings(self) -> None:
         """Push the display settings into the palette and the accessibility flags (after every change)."""
         o = self.settings.options
         apply_colors(o["color_mode"], {"player": o["color_player"], "bolt": o["color_bolt"],
-                                       "laser": o["color_laser"]})
+                                       "laser": o["color_laser"]}, o["accent"])
         A11Y.outlines = o["threat_outlines"] or o["color_mode"] == "high_contrast"
         A11Y.reduce_flashing = o["reduce_flashing"]
         A11Y.reduced_motion = o["reduced_motion"]
@@ -90,7 +93,7 @@ class Game:
         gameplay settings. Gameplay settings are fixed for the run once it starts."""
         o = self.settings.options
         rules = RunRules(start_danger=o["start_danger"] / 100, game_speed=o["game_speed"] / 100,
-                         laser_warning=o["laser_warning"] / 100)
+                         laser_warning=o["laser_warning"] / 100, lasers=o["lasers"])
         return World(self.profile.stats(), self.settings.keybinds, rules)
 
     # --- Navigation (called by scenes) --------------------------------------------------------
@@ -159,6 +162,7 @@ class Game:
 
     def update(self, dt: float) -> None:
         self.scene.update(dt)
+        self.fade_time = max(0.0, self.fade_time - dt)
         self.shake = max(0.0, self.shake - self.shake * config.SHAKE_DECAY * dt - dt)
         self.update_music(dt)
 
@@ -176,7 +180,23 @@ class Game:
 
     # --- Drawing ------------------------------------------------------------------------
     def draw(self) -> None:
+        """The scene, and for a moment after the scene changes, the last frame of the old one fading out
+        over it, so screens ease in instead of popping."""
+        if self.scene is not self.drawn_scene:
+            if self.drawn_scene is not None:
+                # The screen still holds the old scene's frame. A plain surface (no per-pixel alpha) keeps
+                # fading it cheap; a straight copy of the screen would be several times slower to blend.
+                if self.fade_from is None:
+                    self.fade_from = pygame.Surface(self.screen.get_size())
+                self.fade_from.blit(self.screen, (0, 0))
+                self.fade_time = config.SCENE_FADE_TIME
+            self.drawn_scene = self.scene
         self.scene.draw(self.screen)
+        if self.fade_time > 0 and self.fade_from is not None:
+            # Starts below fully opaque, so the new screen shows from the first frame. (It also keeps clear of
+            # alpha 255, which pygame blends many times slower than any other value.)
+            self.fade_from.set_alpha(round(220 * self.fade_time / config.SCENE_FADE_TIME))
+            self.screen.blit(self.fade_from, (0, 0))
 
     def draw_world(self, surface: pygame.Surface) -> None:
         """The arena, the run and the HUD: drawn by play, and behind the pause and game over cards.
@@ -189,7 +209,9 @@ class Game:
         o = self.settings.options
         fps = self.clock.get_fps() if o["show_fps"] else None
         hints = self.control_hints() if o["show_hints"] else None
-        self.hud.draw(surface, self.world, fps, hints, self.profile.best_time)
+        wallet = self.profile.coins - (self.result.coins if self.result else 0)    # as it was before this run
+        mouse = pygame.mouse.get_pos() if isinstance(self.scene, PlayScene) else None   # tooltips only in play
+        self.hud.draw(surface, self.world, fps, hints, self.profile.best_time, wallet, mouse)
 
     def control_hints(self) -> list[HintRow]:
         """The controls cheat-sheet, built from the player's own bindings."""

@@ -1,4 +1,7 @@
-"""Text rendering with cached fonts, plus keycaps (a key binding drawn as a key)."""
+"""Text rendering with cached fonts, plus keycaps (a key binding drawn as a key)
+and styled text: letter-spaced labels, gradient fills and soft glows."""
+
+from functools import lru_cache
 
 import pygame
 
@@ -58,6 +61,62 @@ def draw_text(surface: pygame.Surface, text: str, style: str, color: Color,
         surface.blit(font.render(text, True, PALETTE.key_shadow), rect.move(1, 2))
     surface.blit(image, rect)
     return rect
+
+
+# --- Styled text (each image is built once and cached) ---------------------------------------
+@lru_cache(maxsize=128)
+def render_spaced(text: str, style: str, color: Color, spacing: int) -> pygame.Surface:
+    """``text`` with ``spacing`` px of extra room between letters, for small captions and the logo."""
+    font = get_font(style)
+    glyphs = [font.render(ch, True, color) for ch in text]
+    width = sum(g.get_width() for g in glyphs) + spacing * max(0, len(glyphs) - 1)
+    image = pygame.Surface((max(1, width), font.get_height()), pygame.SRCALPHA)
+    x = 0
+    for glyph in glyphs:
+        image.blit(glyph, (x, 0))
+        x += glyph.get_width() + spacing
+    return image
+
+
+def draw_spaced(surface: pygame.Surface, text: str, style: str, color: Color, spacing: int = 2,
+                **anchor) -> pygame.Rect:
+    """Letter-spaced text positioned like ``draw_text``, e.g. the "PROFILE" caption."""
+    image = render_spaced(text, style, tuple(color), spacing)
+    rect = image.get_rect(**anchor)
+    surface.blit(image, rect)
+    return rect
+
+
+@lru_cache(maxsize=16)
+def render_gradient(text: str, style: str, top: Color, bottom: Color) -> pygame.Surface:
+    """Text filled with a vertical gradient from ``top`` to ``bottom`` (the logo)."""
+    image = get_font(style).render(text, True, (255, 255, 255))
+    w, h = image.get_size()
+    gradient = pygame.Surface((w, h), pygame.SRCALPHA)
+    for y in range(h):
+        pygame.draw.line(gradient, (*lerp_color(top, bottom, y / max(1, h - 1)), 255), (0, y), (w, y))
+    image.blit(gradient, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+    return image
+
+
+@lru_cache(maxsize=16)
+def render_glow(text: str, style: str, color: Color, pad: int = 28) -> pygame.Surface:
+    """A soft blurred copy of ``text`` to draw behind it. Shrinking and growing it again is a cheap blur."""
+    base = get_font(style).render(text, True, color)
+    canvas = pygame.Surface((base.get_width() + pad * 2, base.get_height() + pad * 2), pygame.SRCALPHA)
+    canvas.blit(base, (pad, pad))
+    small = pygame.transform.smoothscale(canvas, (max(1, canvas.get_width() // 6), max(1, canvas.get_height() // 6)))
+    return pygame.transform.smoothscale(small, canvas.get_size())
+
+
+def draw_glowing_text(surface: pygame.Surface, text: str, style: str, color: Color, **anchor) -> pygame.Rect:
+    """A headline with a soft glow of its own color behind it (GAME OVER)."""
+    rect = pygame.Rect((0, 0), get_font(style).size(text))
+    for name, value in anchor.items():
+        setattr(rect, name, value)
+    glow = render_glow(text, style, tuple(color))
+    surface.blit(glow, glow.get_rect(center=rect.center))
+    return draw_text(surface, text, style, color, shadow=True, center=rect.center)
 
 
 def draw_keycap(surface: pygame.Surface, label: str, **anchor) -> pygame.Rect:

@@ -9,7 +9,7 @@ import pygame
 
 from app import config
 from app.render.shapes import draw_panel
-from app.render.text import draw_text
+from app.render.text import draw_spaced, draw_text
 from app.theme.palette import PALETTE
 
 if TYPE_CHECKING:                       # scenes call back into the Game; only needed for type hints
@@ -67,7 +67,7 @@ def draw_stat_tile(surface: pygame.Surface, rect: pygame.Rect, label: str, value
                    value_style: str = "cooldown", note: str | None = None) -> None:
     """A small sunken box: a caption at the top, a big value under it, and an optional note at the bottom."""
     draw_panel(surface, rect, "slot")
-    draw_text(surface, label, "label", PALETTE.text_faint, topleft=(rect.x + 12, rect.y + 10))
+    draw_spaced(surface, label, "label", PALETTE.text_faint, 2, topleft=(rect.x + 12, rect.y + 10))
     draw_text(surface, value, value_style, color, shadow=True, topleft=(rect.x + 12, rect.y + 28))
     if note:
         draw_text(surface, note, "tiny", PALETTE.text_faint, bottomleft=(rect.x + 12, rect.bottom - 9))

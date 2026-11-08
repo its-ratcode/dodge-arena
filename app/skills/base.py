@@ -56,6 +56,10 @@ class Skill:
         """How much of the skill's effect is left (1 -> 0), or 0 if nothing is active."""
         return 0.0
 
+    def describe(self, world: World) -> str:
+        """What it does, with this run's real numbers (upgrades included), for the HUD tooltip."""
+        return getattr(self, "summary", "")
+
     def try_cast(self, world: World, target: Vector2) -> bool:
         """Cast if ready, aimed at ``target`` (the cursor position)."""
         if not self.ready or self.cast(world, target) is False:

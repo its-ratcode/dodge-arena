@@ -34,6 +34,10 @@ class Shield(Skill):
         p = world.player
         return p.shield_remaining / p.shield_duration if p.shielded else 0.0
 
+    def describe(self, world: World) -> str:
+        return (f"Blocks the next bolt or laser within {world.stats.shield_duration:g} s. While it is up, "
+                f"the bubble is your hitbox.")
+
 
 class WallSkill(Skill):
     """Raises a wall in front of the player, across the direction of the cursor."""
@@ -59,6 +63,10 @@ class WallSkill(Skill):
     def active_fraction(self, world: World) -> float:
         return self.wall.remaining / self.wall.duration if self.wall and self.wall.alive else 0.0
 
+    def describe(self, world: World) -> str:
+        return (f"A {world.stats.wall_length:g} px wall in front of you for {config.WALL_DURATION:g} s. "
+                f"It destroys bolts; lasers pass through.")
+
 
 class Dash(Skill):
     """A fast, fixed-distance dash toward the cursor. You can still be hit on the way."""
@@ -77,3 +85,6 @@ class Dash(Skill):
 
     def active_fraction(self, world: World) -> float:
         return 1.0 if world.player.dashing else 0.0
+
+    def describe(self, world: World) -> str:
+        return f"Dash {config.DASH_RANGE} px toward the cursor. A bolt in the way can still hit you."

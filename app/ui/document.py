@@ -11,7 +11,7 @@ import pygame
 
 from app.render.icons import draw_icon
 from app.render.shapes import draw_panel
-from app.render.text import draw_keycap, draw_text, line_height, text_size, wrap_text
+from app.render.text import draw_keycap, draw_spaced, draw_text, line_height, text_size, wrap_text
 from app.theme.palette import PALETTE
 from app.theme.styles import RADIUS_SM
 
@@ -33,10 +33,11 @@ class Block:
 
 
 class Heading(Block):
-    """A section title with an accent underline. Sections are what the sidebar jumps to."""
+    """A section title, with its icon, and an accent underline. Sections are what the sidebar jumps to."""
 
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str, icon: str | None = None) -> None:
         self.text = text
+        self.icon = icon
         self.width = 0
 
     def layout(self, width: int) -> int:
@@ -45,10 +46,28 @@ class Heading(Block):
         return self.height
 
     def draw(self, surface: pygame.Surface, x: int, y: int) -> None:
-        draw_text(surface, self.text, "timer", PALETTE.text, shadow=True, topleft=(x, y))
+        tx = x
+        if self.icon:
+            draw_icon(surface, self.icon, (x + 13, y + line_height("timer") // 2), 26, PALETTE.accent)
+            tx += 36
+        draw_text(surface, self.text, "timer", PALETTE.text, shadow=True, topleft=(tx, y))
         bottom = y + self.height - 4
         pygame.draw.line(surface, PALETTE.line, (x, bottom), (x + self.width, bottom))
         pygame.draw.line(surface, PALETTE.accent, (x, bottom), (x + 60, bottom), 3)
+
+
+class Subheading(Block):
+    """A small letter-spaced caption that splits a section into parts, e.g. "AIMING"."""
+
+    def __init__(self, text: str) -> None:
+        self.text = text.upper()
+
+    def layout(self, width: int) -> int:
+        self.height = line_height("label") + 6
+        return self.height
+
+    def draw(self, surface: pygame.Surface, x: int, y: int) -> None:
+        draw_spaced(surface, self.text, "label", PALETTE.accent, 3, topleft=(x, y + 6))
 
 
 class Paragraph(Block):
@@ -90,6 +109,65 @@ class Bullets(Block):
                 draw_text(surface, line, "body", PALETTE.text_dim, topleft=(x + self.INDENT, y))
                 y += step
             y += 6
+
+
+class Table(Block):
+    """Rows of values under letter-spaced headers. ``widths`` are fractions of the full width per column;
+    the first column is the row's name."""
+
+    ROW_H = 30
+
+    def __init__(self, headers: list[str], rows: list[tuple[str, ...]], widths: list[float]) -> None:
+        self.headers = headers
+        self.rows = rows
+        self.widths = widths
+        self.width = 0
+
+    def layout(self, width: int) -> int:
+        self.width = width
+        self.height = self.ROW_H * (len(self.rows) + 1)
+        return self.height
+
+    def columns(self, x: int) -> list[int]:
+        xs = []
+        for fraction in self.widths:
+            xs.append(x)
+            x += round(self.width * fraction)
+        return xs
+
+    def draw(self, surface: pygame.Surface, x: int, y: int) -> None:
+        xs = self.columns(x)
+        for cx, header in zip(xs, self.headers):
+            draw_spaced(surface, header.upper(), "label", PALETTE.text_faint, 2, midleft=(cx + 10, y + self.ROW_H // 2))
+        for i, row in enumerate(self.rows):
+            ry = y + self.ROW_H * (i + 1)
+            if i % 2 == 0:
+                pygame.draw.rect(surface, PALETTE.row_hover, (x, ry, self.width, self.ROW_H), border_radius=RADIUS_SM)
+            for j, (cx, cell) in enumerate(zip(xs, row)):
+                draw_text(surface, cell, "small", PALETTE.text if j else PALETTE.text_dim,
+                          midleft=(cx + 10, ry + self.ROW_H // 2))
+
+
+class KeyList(Block):
+    """Keys and what they do, one per line: [Q] Shield (ability)."""
+
+    ROW_H = 30
+    LABEL_X = 170           # px; the descriptions line up here
+
+    def __init__(self, items: list[tuple[list[str], str]]) -> None:
+        self.items = items
+
+    def layout(self, width: int) -> int:
+        self.height = self.ROW_H * len(self.items)
+        return self.height
+
+    def draw(self, surface: pygame.Surface, x: int, y: int) -> None:
+        for keys, label in self.items:
+            kx = x
+            for key in keys:
+                kx = draw_keycap(surface, key, midleft=(kx, y + self.ROW_H // 2)).right + 4
+            draw_text(surface, label, "body", PALETTE.text_dim, midleft=(x + self.LABEL_X, y + self.ROW_H // 2))
+            y += self.ROW_H
 
 
 @dataclass
@@ -165,6 +243,7 @@ class Section:
 
     title: str
     blocks: list[Block]
+    icon: str | None = None             # shown next to the heading and in the sidebar
 
 
 class Document:
@@ -179,7 +258,7 @@ class Document:
             if y:
                 y += BLOCK_GAP * 2                     # extra space before each new section
             self.anchors.append(y)
-            for block in [Heading(section.title), *section.blocks]:
+            for block in [Heading(section.title, section.icon), *section.blocks]:
                 self.placed.append((y, block))
                 y += block.layout(width) + BLOCK_GAP
         self.height = y

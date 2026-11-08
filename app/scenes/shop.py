@@ -31,8 +31,8 @@ def describe(upgrade: Upgrade, width: int) -> str:
 
 
 class UpgradeCard(Button):
-    """One upgrade: a click buys (or sells, on the - button). Enter buys too; the shop
-    adds + / - and Del for the focused card."""
+    """One upgrade: a click buys (or sells, on the - button), a right click sells. Enter buys too;
+    the shop adds + / - and Del for the focused card."""
 
     def __init__(self, upgrade: Upgrade, shop: "ShopScene") -> None:
         super().__init__(upgrade.name, lambda: shop.buy(upgrade), size=(ROW_W, ROW_H))
@@ -57,6 +57,9 @@ class UpgradeCard(Button):
             self.shop.sell(self.upgrade)
         else:
             self.shop.buy(self.upgrade)
+
+    def right_click(self, pos) -> None:
+        self.shop.sell(self.upgrade)
 
     def draw(self, surface: pygame.Surface) -> None:
         profile = self.shop.game.profile
@@ -149,7 +152,7 @@ class ShopScene(Scene):
             card.rect.topleft = (p.x + PAD + column * (ROW_W + COLUMN_GAP), p.y + ROWS_TOP + row * (ROW_H + ROW_GAP))
             self.cards.append(card)
         self.refund_all = Button(lambda: "Click again to confirm" if self.confirm_timer > 0 else "Refund all",
-                                 self.refund_everything, icon="coin", size=(250, 46))
+                                 self.refund_everything, icon="coin", size=(250, 46), variant="danger")
         self.refund_all.rect.bottomleft = (p.x + PAD, p.bottom - 24)
         back_button = Button("Back", self.go_back, hotkey="escape", primary=True, sound="back", size=(200, 46))
         back_button.rect.bottomright = (p.right - PAD, p.bottom - 24)

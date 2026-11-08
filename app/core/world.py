@@ -32,11 +32,12 @@ class RunRules:
     start_danger: float = 0.0           # 0..1: danger the run starts at
     game_speed: float = 1.0             # 0.5..1: the whole run runs this much slower (applied by the play scene)
     laser_warning: float = 1.0          # 1..2: lasers warn this many times longer
+    lasers: bool = True                 # False: bolts only (practice)
 
     @property
     def counts_for_best(self) -> bool:
-        """Slower runs and longer warnings are easier, so they never set a best time."""
-        return self.game_speed == 1.0 and self.laser_warning == 1.0
+        """Slower runs, longer warnings and runs without lasers are easier, so they never set a best time."""
+        return self.game_speed == 1.0 and self.laser_warning == 1.0 and self.lasers
 
 
 class World:
@@ -232,7 +233,8 @@ class World:
             self.toast("MAX DANGER" if m >= 1 else f"Danger {int(m * 100)}%", "danger", "bolt")
             self.events.append("danger")
         if self.survival_time >= self.next_survival_milestone:
-            self.toast(f"{fmt_time(self.next_survival_milestone)[:-2]} survived!", "warning", "time_warp")
+            survived = fmt_time(self.next_survival_milestone)[:-2].removeprefix("0")     # "0:30", "1:00"
+            self.toast(f"{survived} survived!", "warning", "time_warp")
             self.events.append("milestone")
             self.next_survival_milestone += config.SURVIVAL_MILESTONE_INTERVAL
 
@@ -289,7 +291,7 @@ class World:
             self.spawn_timer += ramp(config.BOLT_SPAWN_INTERVAL_START, config.BOLT_SPAWN_INTERVAL_END, danger)
         # Lasers: random gaps that shrink as danger rises.
         self.laser_timer -= dt
-        if self.laser_timer <= 0:
+        if self.laser_timer <= 0 and self.rules.lasers:
             self.spawn_laser()
             self.laser_timer = random.uniform(
                 ramp(config.LASER_INTERVAL_MIN_START, config.LASER_INTERVAL_MIN_END, danger),

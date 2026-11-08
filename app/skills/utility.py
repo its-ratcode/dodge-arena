@@ -34,6 +34,10 @@ class Sprint(Skill):
         buff = world.player.speed_buffs.get("sprint")
         return buff.remaining / buff.duration if buff else 0.0
 
+    def describe(self, world: World) -> str:
+        return (f"+{(config.SPRINT_MULTIPLIER - 1) * 100:.0f}% move speed for "
+                f"{world.stats.sprint_duration:g} s.")
+
 
 class Blink(Skill):
     """Instantly teleport toward the cursor, up to the run's blink range."""
@@ -49,3 +53,7 @@ class Blink(Skill):
 
     def cast(self, world: World, target: Vector2) -> None:
         world.blink_toward(target, world.stats.blink_range)
+
+    def describe(self, world: World) -> str:
+        return (f"Teleport toward the cursor, up to {world.stats.blink_range:g} px. Nothing can hit you "
+                f"on the way.")

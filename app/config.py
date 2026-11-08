@@ -31,6 +31,7 @@ DEFAULT_KEYBINDS = {
     "sprint": "d", "blink": "f",                    # utility spells
     "powerup": "space",
     "pause": "escape",
+    "restart": "r",                                 # play again (game over) / restart (pause)
 }
 DEFAULT_MOVE_BUTTON = 3    # pygame mouse button: 1 = left, 3 = right
 
@@ -163,6 +164,7 @@ DEATH_SLOWMO = 0.25            # threats move at this speed during it
 INTRO_READY_TIME = 0.8         # s "GET READY" shows ...
 INTRO_GO_TIME = 0.55           # ... then "GO!"
 TOAST_DURATION = 2.6           # s a pop-up message stays
+SCENE_FADE_TIME = 0.15         # s the old screen takes to fade out when the screen changes
 FLOATING_TEXT_DURATION = 0.8   # s a "+1" / "BLOCKED" rises and fades
 PATH_DOT_SPACING = 18          # px between the dots of the movement path preview
 NEAR_MISS_DISTANCE = 26        # px; a threat passing this close without hitting is a close call ...

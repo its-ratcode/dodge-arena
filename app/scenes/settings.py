@@ -5,16 +5,16 @@ import pygame
 from app.core.settings import ACTION_LABELS, MOVE_BUTTONS
 from app.render.icons import draw_icon
 from app.render.shapes import draw_panel
-from app.render.text import draw_hint_row, draw_text, line_height, wrap_text
+from app.render.text import draw_hint_row, draw_spaced, draw_text, line_height, wrap_text
 from app.scenes.base import Scene, card_rect, dim, draw_card
-from app.theme.palette import PALETTE
+from app.theme.palette import ACCENTS, PALETTE
 from app.ui.widgets import (Button, ButtonGroup, ChoiceRow, ColorRow, KeyBindRow, TabButton, ToggleRow,
                             VolumeRow, play_ui_sound)
 from app.util.keys import is_valid_key_name
 
 CARD_W, CARD_H = 780, 660
 PAD = 28
-ROW_H, ROW_GAP = 40, 8
+ROW_H, ROW_GAP = 36, 6
 CONFIRM_TIME = 3.0          # s to click "Reset to defaults" a second time
 TABS = ("Controls", "Gameplay", "Display", "Audio", "Accessibility")
 
@@ -27,7 +27,14 @@ COLOR_MODE_DESCRIPTIONS = {
     "tritanopia": "Blue-yellow. Red bolts, a teal player, white lasers and orange coins.",
     "high_contrast": "A pure black arena, strong colors, and outlines on every threat.",
 }
-ASSIST_NOTE = "Applies from your next run. Below 100%, runs don't count for best times."
+# Each key row's icon, icon color (a palette field) and tag.
+CONTROL_LOOKS = {
+    "shield": ("shield", "shield", ""), "wall": ("wall", "wall", ""), "dash": ("dash", "dash", ""),
+    "sprint": ("sprint", "sprint", "UTILITY"), "blink": ("blink", "blink", "UTILITY"),
+    "powerup": ("empty", "accent", ""), "pause": ("play", "text_dim", ""),
+    "restart": ("restart", "text_dim", "GAME OVER"),
+}
+ASSIST_NOTE ="Applies from your next run. Below 100%, runs don't count for best times."
 
 
 class SettingsScene(Scene):
@@ -58,7 +65,7 @@ class SettingsScene(Scene):
         self.back_button = Button("Back", self.go_back, hotkey="escape", primary=True, sound="back", size=(200, 44))
         self.back_button.rect.bottomright = (self.card.right - PAD, self.card.bottom - 24)
         self.reset_button = Button(lambda: "Click again to confirm" if self.confirm_timer > 0 else "Reset to defaults",
-                                   self.reset, size=(250, 44))
+                                   self.reset, size=(250, 44), variant="danger", icon="restart")
         self.reset_button.rect.bottomleft = (self.card.x + PAD, self.card.bottom - 24)
         self.rows: list[Button] = []
         self.build_tab()
@@ -86,10 +93,12 @@ class SettingsScene(Scene):
 
     def control_rows(self, size) -> list[Button]:
         s = self.game.settings
-        rows: list[Button] = [KeyBindRow(label, self._listen(action), self._key_of(action),
-                                         self._is_waiting(action), size,
-                                         "Choose the row, then press the new key. Esc cancels.")
-                              for action, label in ACTION_LABELS.items()]
+        rows: list[Button] = []
+        for action, label in ACTION_LABELS.items():
+            icon, color, tag = CONTROL_LOOKS[action]
+            rows.append(KeyBindRow(label, self._listen(action), self._key_of(action), self._is_waiting(action), size,
+                                   "Choose the row, then press the new key. Esc cancels.",
+                                   icon=icon, icon_color=color, tag=tag))
         rows.append(ChoiceRow("Move with", s.cycle_move_button, lambda: MOVE_BUTTONS[s.move_button], size,
                               "The mouse button that walks and follows the cursor."))
         return rows
@@ -108,6 +117,8 @@ class SettingsScene(Scene):
                       "Slows the whole run down. " + ASSIST_NOTE),
             ChoiceRow("Laser warning time", self._cycle("laser_warning"), lambda: f"{o['laser_warning']}%", size,
                       "Lasers warn you longer before they fire. " + ASSIST_NOTE),
+            ToggleRow("Lasers", self._toggle("lasers"), lambda: o["lasers"], size,
+                      "Turn lasers off to practise dodging bolts only. " + ASSIST_NOTE),
         ]
 
     def display_rows(self, size) -> list[Button]:
@@ -120,6 +131,9 @@ class SettingsScene(Scene):
                       "A dotted line from you to where you are walking."),
             ToggleRow("Control hints", self._toggle("show_hints"), lambda: o["show_hints"], size,
                       "Your keys in the top-left corner during a run, as a reminder."),
+            ColorRow("Interface accent", self._cycle("accent"), lambda: o["accent"], size,
+                     "The color of buttons, focus and highlights. Cyan stays easiest to tell apart from coins "
+                     "and danger, also with color blindness.", choices=ACCENTS),
         ]
 
     def audio_rows(self, size) -> list[Button]:
@@ -145,12 +159,12 @@ class SettingsScene(Scene):
         return [
             ChoiceRow("Color mode", self._cycle("color_mode"), lambda: COLOR_MODE_LABELS[o["color_mode"]], size,
                       "Palettes for color vision deficiency. The preview below shows the result."),
-            ColorRow("Player color", self._cycle("color_player"), lambda: o["color_player"],
-                     lambda: PALETTE.player, size, "Your own color. Auto follows the color mode."),
-            ColorRow("Bolt color", self._cycle("color_bolt"), lambda: o["color_bolt"],
-                     lambda: PALETTE.bolt, size, "The color of bolts. Auto follows the color mode."),
-            ColorRow("Laser color", self._cycle("color_laser"), lambda: o["color_laser"],
-                     lambda: PALETTE.laser, size, "The color of lasers. Auto follows the color mode."),
+            ColorRow("Player color", self._cycle("color_player"), lambda: o["color_player"], size,
+                     "Your own color. Auto (A) follows the color mode."),
+            ColorRow("Bolt color", self._cycle("color_bolt"), lambda: o["color_bolt"], size,
+                     "The color of bolts. Auto (A) follows the color mode."),
+            ColorRow("Laser color", self._cycle("color_laser"), lambda: o["color_laser"], size,
+                     "The color of lasers. Auto (A) follows the color mode."),
             ToggleRow("Threat outlines", self._toggle("threat_outlines"), lambda: o["threat_outlines"], size,
                       "A bright outline around every bolt and laser. Always on in High contrast."),
             ToggleRow("Reduce flashing", self._toggle("reduce_flashing"), lambda: o["reduce_flashing"], size,
@@ -256,7 +270,7 @@ class SettingsScene(Scene):
         top = self.rows_top + len(self.rows) * (ROW_H + ROW_GAP)
         strip = pygame.Rect(self.card.x + PAD, top, self.card.width - PAD * 2, 44)
         draw_panel(surface, strip, "slot")
-        draw_text(surface, "PREVIEW", "label", PALETTE.text_faint, midleft=(strip.x + 14, strip.centery))
+        draw_spaced(surface, "PREVIEW", "label", PALETTE.text_faint, 2, midleft=(strip.x + 14, strip.centery))
         items = (("Player", None, PALETTE.player), ("Bolt", "bolt", PALETTE.bolt), ("Laser", "laser", PALETTE.laser),
                  ("Coin", "coin", PALETTE.coin), ("Shield", "shield", PALETTE.shield), ("Wall", "wall", PALETTE.wall))
         x = strip.x + 100

@@ -47,6 +47,9 @@ class Stasis(PowerUp):
     color_name = "stasis"
     summary = "Frozen, but untouchable."
 
+    def describe(self, world: World) -> str:
+        return f"You turn to stone for {config.STASIS_DURATION:g} s: nothing can hit you, but you can't move."
+
     def cast(self, world: World, target: Vector2) -> None:
         world.player.enter_stasis(config.STASIS_DURATION)
 
@@ -59,6 +62,10 @@ class TimeWarp(PowerUp):
     color_name = "time_warp"
     summary = "Threats slow down. You don't."
 
+    def describe(self, world: World) -> str:
+        return (f"For {config.TIME_WARP_DURATION:g} s threats move at {config.TIME_WARP_FACTOR:.0%} speed. "
+                f"You keep yours.")
+
     def cast(self, world: World, target: Vector2) -> None:
         world.time_warp_remaining = config.TIME_WARP_DURATION
 
@@ -70,6 +77,9 @@ class Warp(PowerUp):
     icon = "warp"
     color_name = "warp"
     summary = "A long Blink to the cursor."
+
+    def describe(self, world: World) -> str:
+        return f"Teleport toward the cursor, up to {config.WARP_RANGE} px."
 
     def cast(self, world: World, target: Vector2) -> None:
         world.blink_toward(target, config.WARP_RANGE)
@@ -94,6 +104,10 @@ class CoinRush(PowerUp):
     icon = "coin_rush"
     color_name = "coin"
     summary = "More coins, worth double."
+
+    def describe(self, world: World) -> str:
+        return (f"For {config.COIN_RUSH_DURATION:g} s coins appear much faster and are worth "
+                f"x{config.COIN_RUSH_MULT}.")
 
     def cast(self, world: World, target: Vector2) -> None:
         world.coin_rush_remaining = config.COIN_RUSH_DURATION

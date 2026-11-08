@@ -60,6 +60,8 @@ class Palette:
     panel_top: Color = (26, 34, 52)          # panels are a vertical gradient top -> bottom
     panel_bottom: Color = (14, 19, 30)
     line: Color = (48, 60, 86)               # panel borders and separators
+    row: Color = (22, 29, 44)                # a settings row or sidebar entry ...
+    row_hover: Color = (31, 41, 62)          # ... and the same row while focused
     key_face: Color = (40, 50, 72)           # keycaps showing a key binding
     key_shadow: Color = (8, 11, 18)
 
@@ -67,7 +69,8 @@ class Palette:
     text: Color = (236, 240, 248)
     text_dim: Color = (162, 174, 196)
     text_faint: Color = (106, 118, 142)
-    accent: Color = (64, 206, 226)           # low danger
+    accent: Color = (64, 206, 226)           # the interface accent (focus, main buttons); players can pick it
+    calm: Color = (64, 206, 226)             # low danger: fixed, so the danger bar reads the same with any accent
     success: Color = (88, 218, 148)          # maxed upgrades, the next level's value
     warning: Color = (250, 196, 80)          # medium danger
     danger: Color = (236, 76, 88)            # high danger, game over
@@ -110,10 +113,16 @@ DERIVED_SHADES = (("player", "player_light", 0.45), ("player", "player_outline",
                   ("wall", "wall_outline", 0.7), ("coin", "coin_shine", 0.75))
 
 
-def apply_colors(mode: str, custom: dict[str, str]) -> None:
+# The interface accent a player can choose. Cyan is the default: it stays clearly apart from gold coins
+# and from the amber and red of the danger bar, also for red-green color blindness.
+ACCENTS: dict[str, Color] = {"Cyan": (64, 206, 226), "Gold": (226, 186, 104), "Violet": (164, 142, 255)}
+
+
+def apply_colors(mode: str, custom: dict[str, str], accent: str = "Cyan") -> None:
     """Reset the palette, apply a color mode, then the player's own picks.
 
-    ``custom`` maps a palette field ("player", "bolt", "laser") to a swatch name.
+    ``custom`` maps a palette field ("player", "bolt", "laser") to a swatch name;
+    ``accent`` is a name from ``ACCENTS``.
     """
     for f in fields(Palette):
         setattr(PALETTE, f.name, getattr(DEFAULT_PALETTE, f.name))
@@ -122,6 +131,7 @@ def apply_colors(mode: str, custom: dict[str, str]) -> None:
     for name, swatch in custom.items():
         if SWATCHES.get(swatch):
             setattr(PALETTE, name, SWATCHES[swatch])
+    PALETTE.accent = ACCENTS.get(accent, DEFAULT_PALETTE.accent)
     for base, shade, toward_white in DERIVED_SHADES:
         if getattr(PALETTE, base) != getattr(DEFAULT_PALETTE, base):
             setattr(PALETTE, shade, lerp_color(getattr(PALETTE, base), WHITE, toward_white))
@@ -130,11 +140,11 @@ def apply_colors(mode: str, custom: dict[str, str]) -> None:
 
 
 def danger_color(level: float) -> Color:
-    """Color for a danger level 0..1: accent -> warning -> danger.
+    """Color for a danger level 0..1: calm -> warning -> danger.
 
     Going through a middle color avoids the muddy grey you get when blending
     cyan straight into red.
     """
     if level < 0.5:
-        return lerp_color(PALETTE.accent, PALETTE.warning, level * 2)
+        return lerp_color(PALETTE.calm, PALETTE.warning, level * 2)
     return lerp_color(PALETTE.warning, PALETTE.danger, (level - 0.5) * 2)

@@ -79,8 +79,8 @@ Everything is in **Settings** and saved right away:
 | Tab | Options |
 |---|---|
 | Accessibility | Color modes (Deuteranopia, Protanopia, Tritanopia, High contrast), your own color for the player, bolts and lasers, threat outlines, reduce flashing, reduced motion |
-| Gameplay | Game speed (50-100%), laser warning time (100-200%), starting danger, pause on focus loss, frame rate |
-| Display | Screen shake, movement path preview, control hints (your keys in the top-left corner) |
+| Gameplay | Game speed (50-100%), laser warning time (100-200%), lasers on/off, starting danger, pause on focus loss, frame rate |
+| Display | Screen shake, movement path preview, control hints (your keys in the top-left corner), interface accent (Cyan, Gold or Violet) |
 | Audio | Master, sound effect and music volume, adaptive music, menu sounds, laser audio cue (beeps and a charge-up before lasers fire) |
 
 Every sound and the music are synthesized in code when the game starts: there are no sound files.
@@ -111,8 +111,9 @@ These are the defaults. Every key and the move button can be changed in **Settin
 | D / F | Sprint / Blink (toward the cursor) |
 | Space | Use the held power-up |
 | Esc | Pause / resume (the game also pauses when its window loses focus) |
+| R | Play again (game over) / restart (pause menu) |
 
 Menus work with the mouse or the keyboard: arrows (or Tab) to choose, Enter or Space to confirm,
 arrow keys move between cards in the shop, and the key shown on a button triggers it directly
-(R = play again / restart, S = shop, M = main menu, Esc = back).
-Leaving a run early still banks the coins you picked up.
+(S = shop, M = main menu, Esc = back). Restart, Main menu and Quit game in the pause menu ask
+before ending your run. Leaving a run early still banks the coins you picked up.

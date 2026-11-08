@@ -4,13 +4,13 @@ from collections.abc import Callable
 
 from app import config
 from app.core.storage import SaveFile
-from app.theme.palette import COLOR_MODES, SWATCHES
+from app.theme.palette import ACCENTS, COLOR_MODES, SWATCHES
 from app.util.keys import is_valid_key_name
 
 ACTION_LABELS = {
     "shield": "Shield", "wall": "Wall", "dash": "Dash",
     "sprint": "Sprint", "blink": "Blink",
-    "powerup": "Use power-up", "pause": "Pause",
+    "powerup": "Use power-up", "pause": "Pause", "restart": "Play again",
 }
 MOVE_BUTTONS = {3: "Right click", 1: "Left click"}      # mouse button -> label
 
@@ -24,6 +24,7 @@ OPTIONS: dict[str, tuple[object, tuple]] = {
     "start_danger": (0, (0, 25, 50, 75, 100)),             # % danger a run starts at
     "game_speed": (100, (50, 60, 70, 80, 90, 100)),        # % of normal speed
     "laser_warning": (100, (100, 125, 150, 200)),          # % of the normal laser warning time
+    "lasers": (True, ON_OFF),                               # off: bolts only, for practice
     # Audio
     "master_volume": (80, VOLUMES),
     "sfx_volume": (80, VOLUMES),
@@ -35,6 +36,7 @@ OPTIONS: dict[str, tuple[object, tuple]] = {
     "screen_shake": (True, ON_OFF),
     "show_path": (True, ON_OFF),                            # dotted line to where you are walking
     "show_hints": (True, ON_OFF),                           # controls cheat-sheet in the top-left corner
+    "accent": ("Cyan", tuple(ACCENTS)),                     # the interface's accent color
     # Accessibility
     "color_mode": ("default", tuple(COLOR_MODES)),
     "color_player": ("Auto", tuple(SWATCHES)),
@@ -133,5 +135,7 @@ class Settings:
     # --- Derived -------------------------------------------------------------------------------
     @property
     def assists_on(self) -> bool:
-        """Slower game speed or longer laser warnings make runs easier, so they don't count for best times."""
-        return self.options["game_speed"] != 100 or self.options["laser_warning"] != 100
+        """Slower game speed, longer laser warnings or no lasers make runs easier, so they don't count for
+        best times."""
+        o = self.options
+        return o["game_speed"] != 100 or o["laser_warning"] != 100 or not o["lasers"]

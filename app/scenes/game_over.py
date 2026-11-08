@@ -7,7 +7,7 @@ import pygame
 from app import config
 from app.entities.laser import Laser
 from app.render.icons import draw_icon
-from app.render.text import draw_text
+from app.render.text import draw_glowing_text, draw_text
 from app.scenes.base import Scene, card_rect, dim, draw_card, draw_stat_tile, ease_out
 from app.theme.accessibility import A11Y, wobble
 from app.theme.palette import PALETTE, danger_color
@@ -18,7 +18,7 @@ from app.util.timefmt import fmt_time
 
 CARD_DELAY = config.DEATH_SEQUENCE_TIME     # s of slow-motion death beat before the card appears
 CARD_SLIDE = 0.3        # s for the card to slide into place
-CARD_SIZE = (760, 470)
+CARD_SIZE = (760, 430)
 COUNT_UP = 0.9          # s for the coins tile to count up to its total
 TILE_W, TILE_H, TILE_GAP = 164, 100, 14
 BUTTON_ROW = ((230, "Play again"), (190, "Shop"), (230, "Main menu"))     # widths, left to right
@@ -37,7 +37,8 @@ class GameOverScene(Scene):
         self.age = 0.0
         self.danger_at_death = game.world.danger
         buttons = [
-            Button("Play again", game.start_run, hotkey="r", primary=True, icon="play", size=(BUTTON_ROW[0][0], 50)),
+            Button("Play again", game.start_run, hotkey=lambda: game.settings.keybinds["restart"], primary=True,
+                   icon="play", size=(BUTTON_ROW[0][0], 50)),
             Button("Shop", game.open_shop, hotkey="s", icon="coin", size=(BUTTON_ROW[1][0], 50)),
             Button("Main menu", game.open_main_menu, hotkey="escape", icon="exit", size=(BUTTON_ROW[2][0], 50)),
         ]
@@ -89,7 +90,7 @@ class GameOverScene(Scene):
         card = self.card()
         draw_card(surface, card)
         cx = card.centerx
-        title = draw_text(surface, "GAME OVER", "title", PALETTE.danger, shadow=True, midtop=(cx, card.top + 14))
+        title = draw_glowing_text(surface, "GAME OVER", "title", PALETTE.danger, midtop=(cx, card.top + 14))
         if world.killer is not None:
             what = "a laser" if isinstance(world.killer, Laser) else "a bolt"
             cause = f"Hit by {what} at {fmt_time(world.survival_time)}"
@@ -108,7 +109,7 @@ class GameOverScene(Scene):
                              border_radius=14)
             draw_text(surface, "NEW PERSONAL BEST", "label", PALETTE.panel_bottom, center=ribbon.center)
         elif not result.counted:
-            draw_text(surface, "Assists were on (game speed / laser warning): best time not recorded", "small",
+            draw_text(surface, "Assists were on (Settings > Gameplay): best time not recorded", "small",
                       PALETTE.text_faint, midtop=(cx, title.bottom + 28))
 
         # Four tiles; the coins count up.

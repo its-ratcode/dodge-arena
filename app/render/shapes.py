@@ -47,6 +47,17 @@ def _panel_sprite(size: tuple[int, int], radius: int, top: Color, bottom: Color)
     return sprite
 
 
+@lru_cache(maxsize=32)
+def _edge_light_sprite(width: int, color: Color) -> pygame.Surface:
+    """A 2 px line that fades in from both ends: the lit top edge of a big panel."""
+    sprite = pygame.Surface((max(1, width), 2), pygame.SRCALPHA)
+    for x in range(width):
+        strength = math.sin(math.pi * x / max(1, width - 1)) ** 2
+        pygame.draw.line(sprite, (*color, int(220 * strength)), (x, 0), (x, 0))
+        pygame.draw.line(sprite, (*color, int(70 * strength)), (x, 1), (x, 1))
+    return sprite
+
+
 @lru_cache(maxsize=64)
 def _shadow_sprite(size: tuple[int, int], radius: int, spread: int) -> pygame.Surface:
     w, h = size
@@ -90,6 +101,29 @@ def draw_panel(surface: pygame.Surface, rect, style: str = "chip") -> None:
     pygame.draw.line(surface, lerp_color(top, PALETTE.text, 0.10),
                      (rect.x + st.radius, rect.y + 1), (rect.right - st.radius - 1, rect.y + 1))
     pygame.draw.rect(surface, getattr(PALETTE, st.border), rect, 1, border_radius=st.radius)
+    if st.finish:
+        # A fine line just inside the border, then the top edge lit in the accent color, brightest in the middle.
+        pygame.draw.rect(surface, lerp_color(top, getattr(PALETTE, st.border), 0.55), rect.inflate(-8, -8), 1,
+                         border_radius=max(2, st.radius - 4))
+        edge = _edge_light_sprite(rect.width - st.radius * 2, PALETTE.accent)
+        surface.blit(edge, (rect.x + st.radius, rect.y))
+
+
+def draw_row(surface: pygame.Surface, rect, hover: float) -> None:
+    """A flat list row (settings, guide sidebar). ``hover`` 0..1 tints it and grows an accent bar on the left."""
+    rect = pygame.Rect(rect)
+    radius = PANEL_STYLES["button"].radius
+    pygame.draw.rect(surface, lerp_color(PALETTE.row, PALETTE.row_hover, hover), rect, border_radius=radius)
+    border = lerp_color(PALETTE.border, lerp_color(PALETTE.accent, PALETTE.panel_bottom, 0.45), hover)
+    pygame.draw.rect(surface, border, rect, 1, border_radius=radius)
+    draw_accent_bar(surface, rect, hover, PALETTE.accent)
+
+
+def draw_accent_bar(surface: pygame.Surface, rect: pygame.Rect, amount: float, color: Color) -> None:
+    """A short vertical bar inside the left edge of ``rect`` that grows with ``amount`` (the focus marker)."""
+    height = int((rect.height - 16) * clamp(amount, 0.0, 1.0))
+    if height > 1:
+        pygame.draw.rect(surface, color, (rect.x + 6, rect.centery - height // 2, 3, height), border_radius=2)
 
 
 def draw_bar(surface: pygame.Surface, rect, fraction: float, color: Color) -> None:

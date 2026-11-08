@@ -16,6 +16,11 @@ IMPACTS = {
 }
 
 
+def is_free_escape(event: pygame.event.Event, settings) -> bool:
+    """Esc pauses and resumes even when pause is bound to another key, unless Esc was given to an action."""
+    return event.key == pygame.K_ESCAPE and "escape" not in settings.keybinds.values()
+
+
 class PlayScene(Scene):
     """Moves, casts and pauses. The run itself lives in ``game.world``.
     Keys and the move button come from the settings, read on every event."""
@@ -29,7 +34,7 @@ class PlayScene(Scene):
     def handle_event(self, event: pygame.event.Event) -> None:
         world, settings = self.game.world, self.game.settings
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.key.key_code(settings.keybinds["pause"]):
+            if event.key == pygame.key.key_code(settings.keybinds["pause"]) or is_free_escape(event, settings):
                 self.game.pause()
             elif event.key == world.powerup_slot.key:
                 world.use_powerup(pygame.mouse.get_pos())

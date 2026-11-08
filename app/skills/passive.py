@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from pygame.math import Vector2
 
+from app import config
 from app.skills.base import Skill
 from app.theme.palette import PALETTE
 from app.util.mathx import Color
@@ -33,3 +34,7 @@ class SecondWind(Skill):
 
     def cast(self, world: World, target: Vector2) -> bool:
         return False                    # passive: it can't be cast by hand
+
+    def describe(self, world: World) -> str:
+        return (f"Takes a hit that would end your run, then you are untouchable for "
+                f"{config.SECOND_WIND_INVULN_TIME:g} s. Your Shield is always used first.")

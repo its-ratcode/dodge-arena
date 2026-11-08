@@ -158,6 +158,18 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
         corners = [p(0, -0.7), p(0.7, 0), p(0, 0.7), p(-0.7, 0)]
         for a, b in zip(corners, corners[1:] + corners[:1]):
             pygame.draw.line(surface, color, a, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), max(1, w - 1))
+    elif name == "warning":
+        # A warning triangle with an exclamation mark.
+        pygame.draw.lines(surface, color, True, [p(0, -0.85), p(0.9, 0.75), p(-0.9, 0.75)], w)
+        pygame.draw.line(surface, color, p(0, -0.3), p(0, 0.2), w)
+        pygame.draw.circle(surface, color, p(0, 0.45), max(1, w - 1))
+    elif name == "eye":
+        # An eye: two arcs meeting at the corners, and a round pupil.
+        top = [p(-0.9 + 1.8 * t / 12, -0.55 * (1 - ((t - 6) / 6) ** 2)) for t in range(13)]
+        bottom = [(x, 2 * cy - y) for x, y in top]
+        pygame.draw.lines(surface, color, False, top, w)
+        pygame.draw.lines(surface, color, False, bottom, w)
+        pygame.draw.circle(surface, color, (cx, cy), max(2, round(s * 0.28)))
     else:
         # Unknown name: a plain ring, so a missing icon is visible but harmless.
         pygame.draw.circle(surface, color, (cx, cy), max(3, int(s * 0.7)), w)
@@ -165,5 +177,5 @@ def draw_icon(surface: pygame.Surface, name: str, center, size: float, color: Co
 
 ICON_NAMES = ("shield", "wall", "dash", "sprint", "blink", "coin", "coin_rush", "stasis", "time_warp", "warp",
               "nova", "second_wind", "boots", "haste", "magnet", "bolt", "laser", "play", "restart", "book", "gear",
-              "exit", "empty")
+              "exit", "empty", "warning", "eye")
 """Every icon drawn above."""

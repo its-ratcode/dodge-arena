@@ -20,6 +20,7 @@ class TextStyle:
 
 
 TEXT_STYLES: dict[str, TextStyle] = {
+    "logo":     TextStyle(FONT_DISPLAY, 92, True),      # the first word of the game's name on the main menu
     "title":    TextStyle(FONT_DISPLAY, 64, True),
     "heading":  TextStyle(FONT_DISPLAY, 40, True),      # card headings: PAUSED, GAME OVER
     "stat":     TextStyle(FONT_DISPLAY, 34, True),      # a big number on a card
