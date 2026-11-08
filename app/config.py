@@ -90,7 +90,7 @@ SPRINT_DURATION = 3.0          # s
 SPRINT_MULTIPLIER = 1.5        # x movement speed
 
 BLINK_COOLDOWN = 25.0
-BLINK_RANGE = 160              # px; a closer cursor means a shorter blink
+BLINK_RANGE = 220              # px; a closer cursor means a shorter blink. Further than Dash: it's the emergency spell
 
 # --- Power-ups (one-use pickups) ----------------------------------------------------------------
 POWERUP_FIRST_DELAY = 12.0     # s into a run before the first pickup appears

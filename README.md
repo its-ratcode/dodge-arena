@@ -29,7 +29,7 @@ Two utility spells have long cooldowns, so keep them for emergencies:
 | Utility spell | Effect |
 |---|---|
 | Sprint | +50% movement speed for 3 s |
-| Blink | Instantly teleport toward the cursor, up to 160 px. Cancels a dash |
+| Blink | Instantly teleport toward the cursor, up to 220 px. Cancels a dash |
 
 ## Power-ups
 
@@ -60,7 +60,7 @@ Selling a level refunds exactly what it cost, and "Refund all" resets your build
 | Thick Bubble | +0.3 s Shield | 4 |
 | Long Wall | +25 px Wall length | 4 |
 | Long Sprint | +0.5 s Sprint | 4 |
-| Far Blink | +20 px Blink range | 3 |
+| Far Blink | +30 px Blink range | 3 |
 | Coin Magnet | +40 px coin pull radius | 4 |
 | Second Wind | Survive one fatal hit, then 1.5 s untouchable. Recharges in 120 s, 30 s less per extra level | 3 |
 

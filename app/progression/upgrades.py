@@ -45,7 +45,7 @@ UPGRADES: tuple[Upgrade, ...] = (
     Upgrade("sprint", "Long Sprint", "sprint", "sprint", "Sprint lasts longer.", "+{:g} s Sprint",
             max_level=4, base_cost=15, growth=1.5, step=0.5),
     Upgrade("blink", "Far Blink", "blink", "blink", "Blink goes further.", "+{:g} px Blink range",
-            max_level=3, base_cost=25, growth=1.6, step=20),
+            max_level=3, base_cost=25, growth=1.6, step=30),      # maxed: 310 px, still short of Warp
     Upgrade("magnet", "Coin Magnet", "magnet", "coin", "Nearby coins fly to you.", "{:g} px pull radius",
             max_level=4, base_cost=10, growth=1.5, step=40),
     Upgrade("second_wind", "Second Wind", "second_wind", "second_wind", "Survive one fatal hit.",
